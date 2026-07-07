@@ -3,6 +3,20 @@
 import { useState, useTransition } from "react";
 import { reservarStand, confirmarReserva } from "@/app/mapa-stands/actions";
 
+export type Pabellon =
+  | "azul"
+  | "amarillo"
+  | "blanco"
+  | "rojo"
+  | "zona_comidas"
+  | "burbujas"
+  | "gran_salon"
+  | "plazoleta"
+  | "hall_verde"
+  | "hall";
+
+export type TipoStand = "isla" | "tipo_u" | "esquinero" | "lineal";
+
 export interface StandPublico {
   id: string;
   codigo: string;
@@ -11,7 +25,43 @@ export interface StandPublico {
   precio: number;
   estado: "disponible" | "bloqueado_temporal" | "reservado" | "vendido";
   bloqueado_hasta: string | null;
+  pabellon: Pabellon;
+  tipo_stand: TipoStand | null;
+  valor_con_iva: number | null;
 }
+
+const PABELLON_LABEL: Record<Pabellon, string> = {
+  azul: "Azul",
+  amarillo: "Amarillo",
+  blanco: "Blanco",
+  rojo: "Rojo",
+  zona_comidas: "Zona de Comidas",
+  burbujas: "Burbujas",
+  gran_salon: "Gran Salón",
+  plazoleta: "Plazoleta",
+  hall_verde: "Hall Verde",
+  hall: "Hall",
+};
+
+const PABELLON_OPCIONES: Pabellon[] = [
+  "azul",
+  "amarillo",
+  "blanco",
+  "rojo",
+  "zona_comidas",
+  "burbujas",
+  "gran_salon",
+  "plazoleta",
+  "hall_verde",
+  "hall",
+];
+
+const TIPO_STAND_LABEL: Record<TipoStand, string> = {
+  isla: "Isla",
+  tipo_u: "Tipo U",
+  esquinero: "Esquinero",
+  lineal: "Lineal",
+};
 
 const ESTADO_STYLE: Record<StandPublico["estado"], string> = {
   disponible:
@@ -42,6 +92,10 @@ export function MapaStandsInteractivo({ stands }: { stands: StandPublico[] }) {
   const [paso, setPaso] = useState<Paso>("detalle");
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
+  const [zona, setZona] = useState<Pabellon | "todas">("todas");
+
+  const standsFiltrados =
+    zona === "todas" ? stands : stands.filter((s) => s.pabellon === zona);
 
   function abrir(s: StandPublico) {
     if (s.estado !== "disponible") return;
@@ -84,8 +138,40 @@ export function MapaStandsInteractivo({ stands }: { stands: StandPublico[] }) {
 
   return (
     <>
+      <div className="mb-5 flex flex-wrap gap-2">
+        <button
+          onClick={() => setZona("todas")}
+          className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+            zona === "todas"
+              ? "border-brand bg-brand text-white"
+              : "border-border text-muted hover:border-brand/60 hover:text-foreground"
+          }`}
+        >
+          Todas las zonas
+        </button>
+        {PABELLON_OPCIONES.map((p) => (
+          <button
+            key={p}
+            onClick={() => setZona(p)}
+            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              zona === p
+                ? "border-brand bg-brand text-white"
+                : "border-border text-muted hover:border-brand/60 hover:text-foreground"
+            }`}
+          >
+            {PABELLON_LABEL[p]}
+          </button>
+        ))}
+      </div>
+
+      {standsFiltrados.length === 0 && (
+        <p className="rounded-lg border border-border bg-surface-2 px-4 py-6 text-center text-sm text-muted">
+          No hay stands cargados para esta zona.
+        </p>
+      )}
+
       <div className="grid grid-cols-4 gap-3">
-        {stands.map((s) => (
+        {standsFiltrados.map((s) => (
           <button
             key={s.id}
             onClick={() => abrir(s)}
@@ -123,8 +209,18 @@ export function MapaStandsInteractivo({ stands }: { stands: StandPublico[] }) {
                 <h2 className="text-lg font-semibold">Stand {sel.codigo}</h2>
                 <dl className="mt-4 space-y-2 text-sm">
                   <Row k="Ubicación" v={sel.nombre ?? "—"} />
+                  <Row k="Zona" v={PABELLON_LABEL[sel.pabellon]} />
                   <Row k="Tamaño" v={sel.tamano ?? "—"} />
-                  <Row k="Precio" v={fmtCOP(sel.precio)} />
+                  {sel.tipo_stand && (
+                    <Row
+                      k="Tipo de stand"
+                      v={TIPO_STAND_LABEL[sel.tipo_stand]}
+                    />
+                  )}
+                  <Row
+                    k="Precio (IVA incluido)"
+                    v={fmtCOP(sel.valor_con_iva ?? sel.precio)}
+                  />
                 </dl>
                 {error && <Aviso msg={error} />}
                 <div className="mt-6 flex gap-3">

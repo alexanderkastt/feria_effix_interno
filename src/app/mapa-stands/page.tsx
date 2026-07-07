@@ -16,7 +16,9 @@ export default async function MapaStandsPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("stands_publico")
-    .select("id, codigo, nombre, tamano, precio, estado, bloqueado_hasta")
+    .select(
+      "id, codigo, nombre, tamano, precio, estado, bloqueado_hasta, pabellon, tipo_stand, valor_con_iva",
+    )
     .order("codigo");
 
   const stands = (data ?? []) as StandPublico[];
