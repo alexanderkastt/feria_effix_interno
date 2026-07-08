@@ -118,6 +118,16 @@ export interface StandView {
   directorio_linkedin: string | null;
 }
 
+export interface HistorialEntradaView {
+  id: string;
+  stand_id: string;
+  campo: string;
+  valor_anterior: string | null;
+  valor_nuevo: string | null;
+  usuario_nombre: string | null;
+  creado_en: string;
+}
+
 export interface PatrocinioOption {
   id: string;
   empresa: string;
@@ -290,3 +300,127 @@ export function calcularValorEstandar(
   const valorConIva = Math.round(valorSinIva * (1 + IVA_STANDS));
   return { valorSinIva, valorConIva };
 }
+
+// ---------- Historial de cambios (auditoría) --------------------------------
+// Etiquetas legibles para el nombre de columna crudo que guarda
+// stands_historial.campo. Lo que no está acá se muestra humanizado
+// (guiones bajos -> espacios, primera letra mayúscula) — no hace falta
+// mantener esta lista al día con cada columna nueva.
+const HISTORIAL_CAMPO_LABEL: Record<string, string> = {
+  __creacion__: "Alta del stand",
+  estado: "Estado (mapa público)",
+  estado_venta: "Estado de venta",
+  cliente_nombre: "Nombre del cliente (reserva)",
+  cliente_email: "Email del cliente (reserva)",
+  cliente_telefono: "Teléfono del cliente (reserva)",
+  bloqueado_hasta: "Bloqueo temporal hasta",
+  patrocinador_id: "Patrocinador vinculado",
+  nombre: "Nombre comercial",
+  tamano: "Tamaño",
+  tarifa_zona_comidas: "Tarifa de zona de comidas",
+  pabellon: "Pabellón",
+  tipo_stand: "Tipo de stand",
+  categoria_cliente: "Categoría de cliente",
+  asesor_id: "Asesor comercial",
+  obsequio_de: "Obsequio de",
+  valor_sin_iva: "Valor sin IVA",
+  valor_con_iva: "Valor con IVA",
+  precio_venta: "Precio de venta",
+  precio: "Precio (mapa público)",
+  nombre_fiscal: "Nombre fiscal",
+  nombre_persona_encargada: "Persona encargada",
+  id_effi: "ID Effi",
+  ciudad: "Ciudad",
+  valor_primer_abono: "Valor primer abono",
+  medio_pago_primer_abono: "Medio de pago del primer abono",
+  forma_pago_restante: "Forma de pago restante",
+  valor_restante: "Saldo pendiente",
+  fecha_venta: "Fecha de venta",
+  numero_factura: "N.º factura",
+  primera_vez_en_feria: "Frecuencia en la feria",
+  facturado: "Facturado",
+  contrato_entregado: "Contrato entregado",
+  manual_entregado: "Manual entregado",
+  logo_recibido: "Logo recibido",
+  logo_url: "Logo",
+  marcado_en_mapa: "Marcado en mapa",
+  publicado_web: "Publicado en web",
+  imagen_enviada: "Imagen enviada",
+  formulario_directorio_lleno: "Formulario de directorio",
+  paz_y_salvo: "Paz y salvo",
+  pantallazo_aceptacion: "Pantallazo de aceptación",
+  aprobacion_tesoreria: "Aprobación de tesorería",
+  observaciones_venta: "Observaciones de venta",
+  observaciones_facturacion: "Observaciones de facturación",
+  stand_principal_id: "Fusión (stand principal)",
+  directorio_pais: "Directorio · País",
+  directorio_direccion: "Directorio · Dirección",
+  directorio_telefono: "Directorio · Teléfono",
+  directorio_email: "Directorio · Email",
+  directorio_sitio_web: "Directorio · Sitio web",
+  directorio_descripcion: "Directorio · Descripción",
+  directorio_instagram: "Directorio · Instagram",
+  directorio_facebook: "Directorio · Facebook",
+  directorio_tiktok: "Directorio · TikTok",
+  directorio_linkedin: "Directorio · LinkedIn",
+};
+
+export function labelCampoHistorial(campo: string): string {
+  if (HISTORIAL_CAMPO_LABEL[campo]) return HISTORIAL_CAMPO_LABEL[campo];
+  const humanizado = campo.replace(/_/g, " ");
+  return humanizado.charAt(0).toUpperCase() + humanizado.slice(1);
+}
+
+const CAMPOS_MONEDA = new Set([
+  "valor_sin_iva",
+  "valor_con_iva",
+  "precio_venta",
+  "precio",
+  "valor_primer_abono",
+  "valor_restante",
+]);
+const CAMPOS_BOOLEANOS = new Set([
+  "facturado",
+  "contrato_entregado",
+  "manual_entregado",
+  "logo_recibido",
+  "marcado_en_mapa",
+  "publicado_web",
+  "imagen_enviada",
+  "formulario_directorio_lleno",
+  "paz_y_salvo",
+  "pantallazo_aceptacion",
+  "aprobacion_tesoreria",
+  "tarifa_zona_comidas",
+]);
+
+// Formatea el valor crudo (siempre texto, tal como lo guarda el trigger de
+// auditoría) para mostrarlo legible según el tipo de campo.
+export function formatearValorHistorial(
+  campo: string,
+  valor: string | null,
+): string {
+  if (valor == null || valor === "") return "—";
+  if (CAMPOS_BOOLEANOS.has(campo)) return valor === "true" ? "Sí" : "No";
+  if (CAMPOS_MONEDA.has(campo)) {
+    const n = Number(valor);
+    if (Number.isFinite(n)) return fmtCOP(n);
+  }
+  if (campo === "estado" && valor in ESTADO_STANDS_LABEL) {
+    return ESTADO_STANDS_LABEL[valor as keyof typeof ESTADO_STANDS_LABEL];
+  }
+  if (campo === "estado_venta" && valor in ESTADO_VENTA_LABEL) {
+    return ESTADO_VENTA_LABEL[valor as EstadoVenta];
+  }
+  if (campo === "pabellon" && valor in PABELLON_LABEL) {
+    return PABELLON_LABEL[valor as Pabellon];
+  }
+  return valor;
+}
+
+const ESTADO_STANDS_LABEL: Record<string, string> = {
+  disponible: "Disponible",
+  bloqueado_temporal: "Bloqueado",
+  reservado: "Reservado",
+  vendido: "Vendido",
+};

@@ -7,6 +7,7 @@ import {
   type PatrocinioOption,
   type PagoStandView,
   type AsesorOption,
+  type HistorialEntradaView,
 } from "@/components/panel/StandsAdmin";
 import type { DevolucionView } from "@/components/panel/StandsDevoluciones";
 
@@ -25,12 +26,18 @@ export default async function PanelStandsPage() {
   const puedeEditarComercial = sesion.esAdmin || acceso?.nivel === "admin";
 
   const supabase = await createClient();
-  const [standsRes, patrociniosRes, pagosRes, devolucionesRes, asesoresRes] =
-    await Promise.all([
-      supabase
-        .from("stands")
-        .select(
-          `id, codigo, nombre, tamano, tarifa_zona_comidas, precio, estado, cliente_nombre, patrocinador_id,
+  const [
+    standsRes,
+    patrociniosRes,
+    pagosRes,
+    devolucionesRes,
+    asesoresRes,
+    historialRes,
+  ] = await Promise.all([
+    supabase
+      .from("stands")
+      .select(
+        `id, codigo, nombre, tamano, tarifa_zona_comidas, precio, estado, cliente_nombre, patrocinador_id,
            pabellon, tipo_stand, categoria_cliente, estado_venta, obsequio_de,
            valor_sin_iva, valor_con_iva, precio_venta,
            nombre_fiscal, nombre_persona_encargada, id_effi, ciudad,
@@ -46,25 +53,32 @@ export default async function PanelStandsPage() {
            directorio_email, directorio_sitio_web, directorio_descripcion,
            directorio_instagram, directorio_facebook, directorio_tiktok,
            directorio_linkedin`,
-        )
-        .order("codigo"),
-      supabase.from("patrocinios").select("id, empresa").order("empresa"),
-      supabase
-        .from("pagos_stand")
-        .select("id, stand_id, monto, fecha, medio_pago, tipo_pago")
-        .order("fecha", { ascending: false }),
-      supabase
-        .from("stands_devoluciones")
-        .select(
-          "id, stand_id, pabellon, codigo, valor_pagado_hasta_devolucion, estado_devolucion, motivo, observaciones, fecha_devolucion",
-        )
-        .order("fecha_devolucion", { ascending: false, nullsFirst: false }),
-      supabase
-        .from("asesores_comerciales")
-        .select("id, nombre_completo")
-        .eq("activo", true)
-        .order("nombre_completo"),
-    ]);
+      )
+      .order("codigo"),
+    supabase.from("patrocinios").select("id, empresa").order("empresa"),
+    supabase
+      .from("pagos_stand")
+      .select("id, stand_id, monto, fecha, medio_pago, tipo_pago")
+      .order("fecha", { ascending: false }),
+    supabase
+      .from("stands_devoluciones")
+      .select(
+        "id, stand_id, pabellon, codigo, valor_pagado_hasta_devolucion, estado_devolucion, motivo, observaciones, fecha_devolucion",
+      )
+      .order("fecha_devolucion", { ascending: false, nullsFirst: false }),
+    supabase
+      .from("asesores_comerciales")
+      .select("id, nombre_completo")
+      .eq("activo", true)
+      .order("nombre_completo"),
+    supabase
+      .from("stands_historial")
+      .select(
+        "id, stand_id, campo, valor_anterior, valor_nuevo, creado_en, usuarios(nombre)",
+      )
+      .order("creado_en", { ascending: false })
+      .limit(3000),
+  ]);
 
   const stands: StandView[] = (standsRes.data ?? []).map((s) => ({
     ...s,
@@ -73,6 +87,14 @@ export default async function PanelStandsPage() {
         ?.nombre_completo ?? null,
   })) as unknown as StandView[];
 
+  const historial: HistorialEntradaView[] = (historialRes.data ?? []).map(
+    (h) => ({
+      ...h,
+      usuario_nombre:
+        (h.usuarios as unknown as { nombre: string } | null)?.nombre ?? null,
+    }),
+  ) as unknown as HistorialEntradaView[];
+
   return (
     <StandsAdmin
       stands={stands}
@@ -80,6 +102,7 @@ export default async function PanelStandsPage() {
       pagos={(pagosRes.data ?? []) as PagoStandView[]}
       devoluciones={(devolucionesRes.data ?? []) as DevolucionView[]}
       asesores={(asesoresRes.data ?? []) as AsesorOption[]}
+      historial={historial}
       puedeEditar={puedeEditar}
       puedeEditarComercial={puedeEditarComercial}
     />

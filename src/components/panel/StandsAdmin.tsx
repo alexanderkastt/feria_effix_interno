@@ -31,6 +31,7 @@ import {
   type CategoriaCliente,
   type EstadoVenta,
   type FrecuenciaParticipacion,
+  type HistorialEntradaView,
   type Pabellon,
   type PagoStandView,
   type PatrocinioOption,
@@ -68,6 +69,7 @@ export function StandsAdmin({
   pagos,
   devoluciones,
   asesores,
+  historial,
   puedeEditar,
   puedeEditarComercial,
 }: {
@@ -76,6 +78,7 @@ export function StandsAdmin({
   pagos: PagoStandView[];
   devoluciones: DevolucionView[];
   asesores: AsesorOption[];
+  historial: HistorialEntradaView[];
   puedeEditar: boolean;
   puedeEditarComercial: boolean;
 }) {
@@ -85,6 +88,9 @@ export function StandsAdmin({
   const [nuevoAbierto, setNuevoAbierto] = useState(false);
   const [paraFusionar, setParaFusionar] = useState<Set<string>>(new Set());
   const [fusionAbierta, setFusionAbierta] = useState(false);
+  const [confirmarLiberar, setConfirmarLiberar] = useState<StandView | null>(
+    null,
+  );
 
   const [busqueda, setBusqueda] = useState("");
   const [filtroPabellon, setFiltroPabellon] = useState<Pabellon | "todos">(
@@ -186,6 +192,16 @@ export function StandsAdmin({
     }
     return mapa;
   }, [pagos]);
+
+  const historialPorStand = useMemo(() => {
+    const mapa = new Map<string, HistorialEntradaView[]>();
+    for (const h of historial) {
+      const lista = mapa.get(h.stand_id) ?? [];
+      lista.push(h);
+      mapa.set(h.stand_id, lista);
+    }
+    return mapa;
+  }, [historial]);
 
   const standsPorId = useMemo(() => {
     const mapa = new Map<string, StandView>();
@@ -397,6 +413,14 @@ export function StandsAdmin({
                             onChange={(e) => {
                               const nuevo = e.target
                                 .value as StandView["estado"];
+                              if (
+                                nuevo === "disponible" &&
+                                s.estado !== "disponible" &&
+                                s.cliente_nombre
+                              ) {
+                                setConfirmarLiberar(s);
+                                return;
+                              }
                               startTransition(async () => {
                                 await cambiarEstadoStand(s.id, nuevo);
                               });
@@ -490,6 +514,7 @@ export function StandsAdmin({
         <StandDetalle
           stand={seleccionado}
           pagos={pagosPorStand.get(seleccionado.id) ?? []}
+          historial={historialPorStand.get(seleccionado.id) ?? []}
           asesores={asesores}
           puedeEditar={puedeEditar}
           puedeEditarComercial={puedeEditarComercial}
@@ -511,6 +536,84 @@ export function StandsAdmin({
           pending={pending}
         />
       )}
+
+      {confirmarLiberar && (
+        <ConfirmarLiberarModal
+          stand={confirmarLiberar}
+          pending={pending}
+          onCancelar={() => setConfirmarLiberar(null)}
+          onConfirmar={() => {
+            const id = confirmarLiberar.id;
+            startTransition(async () => {
+              await cambiarEstadoStand(id, "disponible");
+              setConfirmarLiberar(null);
+            });
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ConfirmarLiberarModal({
+  stand,
+  pending,
+  onCancelar,
+  onConfirmar,
+}: {
+  stand: StandView;
+  pending: boolean;
+  onCancelar: () => void;
+  onConfirmar: () => void;
+}) {
+  const [confirmacion, setConfirmacion] = useState("");
+  const confirmado = confirmacion.trim().toUpperCase() === "LIBERAR";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4"
+      onClick={onCancelar}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="my-8 w-full max-w-md space-y-4 rounded-xl border border-border bg-surface p-6"
+      >
+        <h2 className="text-lg font-semibold text-warn">
+          Liberar stand {stand.codigo}
+        </h2>
+        <p className="text-sm text-muted">
+          Este stand tiene datos de cliente cargados (
+          <strong>{stand.cliente_nombre}</strong>). Pasarlo a{" "}
+          <strong>Disponible</strong> va a borrar el nombre, email y teléfono de
+          esa reserva y lo va a dejar visible de nuevo en el mapa público.
+        </p>
+        <div className="rounded-md border border-warn/40 bg-warn/10 p-3">
+          <p className="text-xs text-warn">
+            Para confirmar, escribí <strong>LIBERAR</strong>:
+          </p>
+          <input
+            value={confirmacion}
+            onChange={(e) => setConfirmacion(e.target.value)}
+            placeholder="LIBERAR"
+            className="mt-2 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-brand"
+          />
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancelar}
+            className="flex-1 rounded-md border border-border px-4 py-2 text-sm text-muted hover:text-foreground"
+          >
+            Cancelar
+          </button>
+          <button
+            disabled={pending || !confirmado}
+            onClick={onConfirmar}
+            className="flex-1 rounded-md bg-warn px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+          >
+            {pending ? "Liberando…" : "Confirmar liberación"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -996,6 +1099,12 @@ function FusionarModal({
   pending: boolean;
 }) {
   const [principalId, setPrincipalId] = useState(stands[0]?.id ?? "");
+  const [confirmacion, setConfirmacion] = useState("");
+
+  const principal = stands.find((s) => s.id === principalId);
+  const confirmado =
+    !!principal &&
+    confirmacion.trim().toUpperCase() === principal.codigo.toUpperCase();
 
   return (
     <div
@@ -1027,7 +1136,10 @@ function FusionarModal({
                 type="radio"
                 name="principal"
                 checked={principalId === s.id}
-                onChange={() => setPrincipalId(s.id)}
+                onChange={() => {
+                  setPrincipalId(s.id);
+                  setConfirmacion("");
+                }}
                 className="accent-brand"
               />
               <span className="font-medium">{s.codigo}</span>
@@ -1035,6 +1147,20 @@ function FusionarModal({
             </label>
           ))}
         </div>
+
+        <div className="rounded-md border border-warn/40 bg-warn/10 p-3">
+          <p className="text-xs text-warn">
+            Esta acción no se deshace fácilmente. Para confirmar, escribí el
+            código del stand principal ({principal?.codigo ?? "—"}):
+          </p>
+          <input
+            value={confirmacion}
+            onChange={(e) => setConfirmacion(e.target.value)}
+            placeholder={principal?.codigo ?? ""}
+            className="mt-2 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
+          />
+        </div>
+
         <div className="flex gap-3">
           <button
             onClick={onCancelar}
@@ -1043,7 +1169,7 @@ function FusionarModal({
             Cancelar
           </button>
           <button
-            disabled={pending || !principalId}
+            disabled={pending || !confirmado}
             onClick={() => onConfirmar(principalId)}
             className="flex-1 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-strong disabled:opacity-60"
           >

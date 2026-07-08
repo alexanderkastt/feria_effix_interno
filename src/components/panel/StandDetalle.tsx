@@ -26,11 +26,14 @@ import {
   TIPO_STAND_LABEL,
   fmtCOP,
   formatearTamano,
+  formatearValorHistorial,
+  labelCampoHistorial,
   parsearTamano,
   type AsesorOption,
   type CategoriaCliente,
   type FormaPagoRestante,
   type FrecuenciaParticipacion,
+  type HistorialEntradaView,
   type MedioPago,
   type Pabellon,
   type PagoStandView,
@@ -65,6 +68,7 @@ const TIPOS_PAGO = Object.keys(TIPO_PAGO_LABEL) as TipoPagoStand[];
 export function StandDetalle({
   stand,
   pagos,
+  historial,
   asesores,
   puedeEditar,
   puedeEditarComercial,
@@ -72,6 +76,7 @@ export function StandDetalle({
 }: {
   stand: StandView;
   pagos: PagoStandView[];
+  historial: HistorialEntradaView[];
   asesores: AsesorOption[];
   puedeEditar: boolean;
   puedeEditarComercial: boolean;
@@ -269,6 +274,8 @@ export function StandDetalle({
           pagos={pagos}
           puedeEditar={puedeEditarComercial}
         />
+
+        <HistorialCambios historial={historial} />
       </div>
     </div>
   );
@@ -438,6 +445,79 @@ function PlanDePagos({
               ))}
           </tbody>
         </table>
+      )}
+    </div>
+  );
+}
+
+// Auditoría genérica: una fila por cada campo que cambió (poblada por
+// trigger de base de datos, ver migración stands_historial). Incluye
+// __creacion__ como primer evento del stand. Sirve también como fuente de
+// fechas (ej. "cuándo pasó a reservado" = creado_en de esa fila) sin
+// necesidad de columnas de fecha dedicadas por hito.
+function HistorialCambios({
+  historial,
+}: {
+  historial: HistorialEntradaView[];
+}) {
+  const [mostrarTodo, setMostrarTodo] = useState(false);
+  const visibles = mostrarTodo ? historial : historial.slice(0, 15);
+
+  return (
+    <div className="rounded-lg border border-border bg-surface-2 p-4">
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
+        Historial de cambios
+      </h3>
+      {historial.length === 0 ? (
+        <p className="py-3 text-center text-sm text-muted">
+          Sin cambios registrados todavía.
+        </p>
+      ) : (
+        <>
+          <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+            {visibles.map((h) => (
+              <div
+                key={h.id}
+                className="rounded-md border border-border bg-surface px-3 py-2 text-sm"
+              >
+                <div className="flex items-center justify-between text-xs text-muted">
+                  <span>{labelCampoHistorial(h.campo)}</span>
+                  <span>
+                    {new Date(h.creado_en).toLocaleString("es-CO")} ·{" "}
+                    {h.usuario_nombre ?? "Sistema"}
+                  </span>
+                </div>
+                {h.campo === "__creacion__" ? (
+                  <p className="mt-1">
+                    Stand creado (
+                    {formatearValorHistorial(h.campo, h.valor_nuevo)})
+                  </p>
+                ) : (
+                  <p className="mt-1">
+                    <span className="text-muted line-through">
+                      {formatearValorHistorial(h.campo, h.valor_anterior)}
+                    </span>{" "}
+                    →{" "}
+                    <span className="font-medium">
+                      {formatearValorHistorial(h.campo, h.valor_nuevo)}
+                    </span>
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+          {historial.length > 15 && (
+            <button
+              type="button"
+              onClick={() => setMostrarTodo((v) => !v)}
+              className="mt-2 text-xs text-brand hover:underline"
+            >
+              {mostrarTodo
+                ? "Ver menos"
+                : `Ver los ${historial.length} cambios`}
+            </button>
+          )}
+        </>
       )}
     </div>
   );
