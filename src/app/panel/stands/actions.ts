@@ -186,6 +186,7 @@ export interface NuevoStandInput {
   pabellon: Pabellon | null;
   tipo_stand: TipoStand | null;
   tamano: string | null;
+  tarifa_zona_comidas: boolean;
   precio: number;
   valor_sin_iva: number | null;
   valor_con_iva: number | null;
@@ -209,6 +210,7 @@ export async function crearStand(
     pabellon: input.pabellon,
     tipo_stand: input.tipo_stand,
     tamano: input.tamano,
+    tarifa_zona_comidas: input.tarifa_zona_comidas,
     precio: input.precio,
     valor_sin_iva: input.valor_sin_iva,
     valor_con_iva: input.valor_con_iva,
@@ -232,6 +234,7 @@ export interface DatosComercialesStandInput {
   pabellon: Pabellon | null;
   tipo_stand: TipoStand | null;
   tamano: string | null;
+  tarifa_zona_comidas: boolean;
   categoria_cliente: CategoriaCliente | null;
   ciudad: string | null;
   nombre_fiscal: string | null;

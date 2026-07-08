@@ -25,6 +25,8 @@ import {
   TIPO_PAGO_LABEL,
   TIPO_STAND_LABEL,
   fmtCOP,
+  formatearTamano,
+  parsearTamano,
   type AsesorOption,
   type CategoriaCliente,
   type FormaPagoRestante,
@@ -180,6 +182,14 @@ export function StandDetalle({
                 {stand.estado_venta === "obsequio_directivo" && (
                   <Dato label="Obsequio de" valor={stand.obsequio_de} />
                 )}
+                <Dato
+                  label="Tarifa"
+                  valor={
+                    stand.tarifa_zona_comidas
+                      ? "Zona de comidas ($400.000/m²)"
+                      : "Comercial ($700.000/m²)"
+                  }
+                />
                 <Dato
                   label="Valor sin IVA"
                   valor={
@@ -545,7 +555,9 @@ function EditarDatosComercialesForm({
   const [tipoStand, setTipoStand] = useState<TipoStand | "">(
     stand.tipo_stand ?? "",
   );
-  const [tamano, setTamano] = useState(stand.tamano ?? "");
+  const tamanoInicial = parsearTamano(stand.tamano);
+  const [ancho, setAncho] = useState(tamanoInicial.ancho);
+  const [fondo, setFondo] = useState(tamanoInicial.fondo);
   const [categoriaCliente, setCategoriaCliente] = useState<
     CategoriaCliente | ""
   >(stand.categoria_cliente ?? "");
@@ -609,9 +621,11 @@ function EditarDatosComercialesForm({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const precio = usePrecioStand(tamano, pabellon || null, {
+  const tamano = formatearTamano(ancho, fondo) ?? "";
+  const precio = usePrecioStand(tamano, {
     modo: stand.valor_sin_iva != null ? "manual" : "estandar",
     manualSinIva: stand.valor_sin_iva,
+    esZonaComidas: stand.tarifa_zona_comidas,
   });
 
   function guardar(e: React.FormEvent) {
@@ -621,7 +635,8 @@ function EditarDatosComercialesForm({
       nombre: nombre.trim() || null,
       pabellon: pabellon || null,
       tipo_stand: tipoStand || null,
-      tamano: tamano.trim() || null,
+      tamano: tamano || null,
+      tarifa_zona_comidas: precio.esZonaComidas,
       categoria_cliente: categoriaCliente || null,
       ciudad: ciudad.trim() || null,
       nombre_fiscal: nombreFiscal.trim() || null,
@@ -785,14 +800,28 @@ function EditarDatosComercialesForm({
               </select>
             </Campo>
           </div>
-          <Campo label="Tamaño">
-            <input
-              value={tamano}
-              onChange={(e) => setTamano(e.target.value)}
-              placeholder="Ej. 4x2 (metros)"
-              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
-            />
-          </Campo>
+          <div className="grid grid-cols-2 gap-3">
+            <Campo label="Ancho (m)">
+              <input
+                value={ancho}
+                onChange={(e) => setAncho(e.target.value)}
+                type="number"
+                min="0"
+                step="0.1"
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
+              />
+            </Campo>
+            <Campo label="Fondo (m)">
+              <input
+                value={fondo}
+                onChange={(e) => setFondo(e.target.value)}
+                type="number"
+                min="0"
+                step="0.1"
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
+              />
+            </Campo>
+          </div>
 
           <PrecioStandEditor precio={precio} />
 

@@ -56,6 +56,7 @@ export interface StandView {
   codigo: string;
   nombre: string | null;
   tamano: string | null;
+  tarifa_zona_comidas: boolean;
   precio: number;
   estado: "disponible" | "bloqueado_temporal" | "reservado" | "vendido";
   cliente_nombre: string | null;
@@ -230,9 +231,9 @@ export const TARIFA_M2_ESTANDAR = 700_000;
 export const TARIFA_M2_COMIDAS = 400_000;
 export const IVA_STANDS = 0.19;
 
-// Interpreta tamaños tipo "4x2" (ancho x profundidad, en metros). Devuelve
-// null si el texto no matchea ese patrón (ej. tamaños libres del Excel
-// histórico) para que el que calcula el precio decida el fallback.
+// Interpreta tamaños tipo "4x2" (ancho x fondo, en metros). Devuelve null si
+// el texto no matchea ese patrón (ej. tamaños libres del Excel histórico)
+// para que el que calcula el precio decida el fallback.
 export function calcularAreaM2(tamano: string | null): number | null {
   if (!tamano) return null;
   const m = tamano
@@ -246,20 +247,46 @@ export function calcularAreaM2(tamano: string | null): number | null {
   return a * b;
 }
 
-export function tarifaM2Pabellon(pabellon: Pabellon | null): number {
-  return pabellon === "zona_comidas" ? TARIFA_M2_COMIDAS : TARIFA_M2_ESTANDAR;
+// Descompone "4x2" en { ancho: "4", fondo: "2" } para poblar dos inputs
+// numéricos separados. Vacíos si el texto no matchea el patrón "AxB".
+export function parsearTamano(tamano: string | null): {
+  ancho: string;
+  fondo: string;
+} {
+  if (!tamano) return { ancho: "", fondo: "" };
+  const m = tamano
+    .trim()
+    .toLowerCase()
+    .match(/^(\d+(?:[.,]\d+)?)\s*x\s*(\d+(?:[.,]\d+)?)$/);
+  if (!m) return { ancho: "", fondo: "" };
+  return { ancho: m[1], fondo: m[2] };
 }
 
-// Valor de lista (sin negociación) a partir del tamaño y el pabellón. null si
-// el tamaño no se pudo interpretar como "AxB" — en ese caso el precio se
-// carga a mano en el formulario, no hay tarifa automática posible.
+// Inversa de parsearTamano: arma el texto "AxB" a partir de los dos campos
+// numéricos. null si falta alguno de los dos (no hay tamaño completo aún).
+export function formatearTamano(ancho: string, fondo: string): string | null {
+  const a = ancho.trim();
+  const f = fondo.trim();
+  if (!a || !f) return null;
+  return `${a}x${f}`;
+}
+
+export function tarifaM2(esZonaComidas: boolean): number {
+  return esZonaComidas ? TARIFA_M2_COMIDAS : TARIFA_M2_ESTANDAR;
+}
+
+// Valor de lista (sin negociación) a partir del tamaño y el check manual de
+// tarifa (comercial vs. zona de comidas) — independiente del pabellón físico
+// del stand, para poder cargar el valor real caso por caso. null si el
+// tamaño no se pudo interpretar como "AxB" — en ese caso el precio se carga
+// a mano en el formulario, no hay tarifa automática posible.
 export function calcularValorEstandar(
   tamano: string | null,
-  pabellon: Pabellon | null,
+  esZonaComidas: boolean,
 ): { valorSinIva: number; valorConIva: number } | null {
   const area = calcularAreaM2(tamano);
   if (area == null) return null;
-  const valorSinIva = Math.round(area * tarifaM2Pabellon(pabellon));
+  const valorSinIva = Math.round(area * tarifaM2(esZonaComidas));
   const valorConIva = Math.round(valorSinIva * (1 + IVA_STANDS));
   return { valorSinIva, valorConIva };
 }

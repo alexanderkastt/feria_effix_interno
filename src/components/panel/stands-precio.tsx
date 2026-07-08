@@ -5,7 +5,6 @@ import {
   IVA_STANDS,
   calcularValorEstandar,
   fmtCOP,
-  type Pabellon,
 } from "@/components/panel/stands-shared";
 
 export function Campo({
@@ -29,9 +28,11 @@ type ModoPrecio =
   | "descuento_porcentaje"
   | "manual";
 
-// Tarifa oficial: $700.000/m² ($400.000/m² en zona de comidas) + 19% IVA.
-// El área sale del tamaño ("AxB", en metros) y se recalcula en vivo apenas
-// cambia tamaño o pabellón — es la base de los 4 modos:
+// Tarifa oficial: $700.000/m² comercial, $400.000/m² zona de comidas + 19%
+// IVA. El área sale del tamaño ("AxB", en metros); el check "esZonaComidas"
+// es manual e independiente del pabellón físico del stand (un stand puede
+// estar parado en una zona pero cobrar la tarifa de otra). Es la base de
+// los 4 modos:
 //   - estandar: tarifa oficial tal cual.
 //   - descuento_valor: tarifa oficial menos un monto fijo en pesos.
 //   - descuento_porcentaje: tarifa oficial menos un %.
@@ -39,17 +40,23 @@ type ModoPrecio =
 // valorConIva siempre se deriva de valorSinIva * 1.19 (no es un campo aparte).
 export function usePrecioStand(
   tamano: string,
-  pabellon: Pabellon | null,
-  inicial?: { modo?: ModoPrecio; manualSinIva?: number | null },
+  inicial?: {
+    modo?: ModoPrecio;
+    manualSinIva?: number | null;
+    esZonaComidas?: boolean;
+  },
 ) {
   const [modo, setModo] = useState<ModoPrecio>(inicial?.modo ?? "estandar");
+  const [esZonaComidas, setEsZonaComidas] = useState(
+    inicial?.esZonaComidas ?? false,
+  );
   const [descuentoPct, setDescuentoPct] = useState("0");
   const [descuentoValor, setDescuentoValor] = useState("0");
   const [manualSinIva, setManualSinIva] = useState(
     inicial?.manualSinIva != null ? String(inicial.manualSinIva) : "",
   );
 
-  const estandar = calcularValorEstandar(tamano.trim() || null, pabellon);
+  const estandar = calcularValorEstandar(tamano.trim() || null, esZonaComidas);
 
   let valorSinIva: number | null;
   if (modo === "manual") {
@@ -73,6 +80,8 @@ export function usePrecioStand(
   return {
     modo,
     setModo,
+    esZonaComidas,
+    setEsZonaComidas,
     descuentoPct,
     setDescuentoPct,
     descuentoValor,
@@ -97,9 +106,21 @@ export function PrecioStandEditor({
     <div className="space-y-2 rounded-md border border-border bg-surface-2 p-3">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wide text-muted">
-          Precio ($700.000/m² · $400.000/m² zona de comidas · +19% IVA)
+          Precio ($700.000/m² comercial · $400.000/m² zona de comidas · +19%
+          IVA)
         </span>
       </div>
+
+      <label className="flex items-center gap-2 text-xs text-muted">
+        <input
+          type="checkbox"
+          checked={precio.esZonaComidas}
+          onChange={(e) => precio.setEsZonaComidas(e.target.checked)}
+          className="h-4 w-4 accent-brand"
+        />
+        Cobrar tarifa de zona de comidas ($400.000/m² en vez de $700.000/m²)
+      </label>
+
       <div className="flex flex-wrap gap-2 text-xs">
         {(
           [

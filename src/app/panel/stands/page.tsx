@@ -30,7 +30,7 @@ export default async function PanelStandsPage() {
       supabase
         .from("stands")
         .select(
-          `id, codigo, nombre, tamano, precio, estado, cliente_nombre, patrocinador_id,
+          `id, codigo, nombre, tamano, tarifa_zona_comidas, precio, estado, cliente_nombre, patrocinador_id,
            pabellon, tipo_stand, categoria_cliente, estado_venta, obsequio_de,
            valor_sin_iva, valor_con_iva, precio_venta,
            nombre_fiscal, nombre_persona_encargada, id_effi, ciudad,

@@ -26,6 +26,7 @@ import {
   PABELLON_LABEL,
   TIPO_STAND_LABEL,
   fmtCOP,
+  formatearTamano,
   type AsesorOption,
   type CategoriaCliente,
   type EstadoVenta,
@@ -837,11 +838,13 @@ function NuevoStandModal({ onCerrar }: { onCerrar: () => void }) {
   const [nombre, setNombre] = useState("");
   const [pabellon, setPabellon] = useState<Pabellon | "">("");
   const [tipoStand, setTipoStand] = useState<TipoStand | "">("");
-  const [tamano, setTamano] = useState("");
+  const [ancho, setAncho] = useState("");
+  const [fondo, setFondo] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const precio = usePrecioStand(tamano, pabellon || null);
+  const tamano = formatearTamano(ancho, fondo) ?? "";
+  const precio = usePrecioStand(tamano);
 
   function guardar(e: React.FormEvent) {
     e.preventDefault();
@@ -851,7 +854,7 @@ function NuevoStandModal({ onCerrar }: { onCerrar: () => void }) {
     }
     if (precio.valorSinIva == null) {
       setError(
-        "No se pudo calcular el precio: ingresá un valor manual o revisá el tamaño.",
+        "No se pudo calcular el precio: ingresá un valor manual o cargá ancho y fondo.",
       );
       return;
     }
@@ -861,7 +864,8 @@ function NuevoStandModal({ onCerrar }: { onCerrar: () => void }) {
       nombre: nombre.trim() || null,
       pabellon: pabellon || null,
       tipo_stand: tipoStand || null,
-      tamano: tamano.trim() || null,
+      tamano: tamano || null,
+      tarifa_zona_comidas: precio.esZonaComidas,
       precio: precio.valorConIva ?? 0,
       valor_sin_iva: precio.valorSinIva,
       valor_con_iva: precio.valorConIva,
@@ -939,14 +943,30 @@ function NuevoStandModal({ onCerrar }: { onCerrar: () => void }) {
             </select>
           </Campo>
         </div>
-        <Campo label="Tamaño">
-          <input
-            value={tamano}
-            onChange={(e) => setTamano(e.target.value)}
-            placeholder="Ej. 4x2 (metros)"
-            className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-brand"
-          />
-        </Campo>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo label="Ancho (m)">
+            <input
+              value={ancho}
+              onChange={(e) => setAncho(e.target.value)}
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="Ej. 4"
+              className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </Campo>
+          <Campo label="Fondo (m)">
+            <input
+              value={fondo}
+              onChange={(e) => setFondo(e.target.value)}
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="Ej. 2"
+              className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </Campo>
+        </div>
 
         <PrecioStandEditor precio={precio} />
 
