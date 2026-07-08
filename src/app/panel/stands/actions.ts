@@ -62,21 +62,6 @@ export async function cambiarEstadoStand(
   return { ok: true };
 }
 
-// Vincular / desvincular un stand con un patrocinador.
-export async function vincularPatrocinador(
-  standId: string,
-  patrocinadorId: string | null,
-): Promise<AccionResult> {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("stands")
-    .update({ patrocinador_id: patrocinadorId })
-    .eq("id", standId);
-  if (error) return { ok: false, mensaje: error.message };
-  revalidatePath("/panel/stands");
-  return { ok: true };
-}
-
 type MedioPago =
   | "cuenta_banco_effix"
   | "efectivo"

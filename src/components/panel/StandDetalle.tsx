@@ -134,6 +134,19 @@ export function StandDetalle({
 
         <LinkPublicoStand stand={stand} />
 
+        {stand.cliente_nombre && (
+          <div className="rounded-lg border border-warn/40 bg-warn/10 p-3 text-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-warn">
+              Reserva pública pendiente de gestionar
+            </p>
+            <p className="mt-1">
+              {stand.cliente_nombre}
+              {stand.cliente_telefono ? ` · ${stand.cliente_telefono}` : ""}
+              {stand.cliente_email ? ` · ${stand.cliente_email}` : ""}
+            </p>
+          </div>
+        )}
+
         {editando ? (
           <EditarDatosComercialesForm
             stand={stand}

@@ -6,7 +6,6 @@ import {
   crearStand,
   desfusionarStand,
   fusionarStands,
-  vincularPatrocinador,
   type NuevoStandInput,
 } from "@/app/panel/stands/actions";
 import { StandAvatar } from "@/components/StandAvatar";
@@ -34,7 +33,6 @@ import {
   type HistorialEntradaView,
   type Pabellon,
   type PagoStandView,
-  type PatrocinioOption,
   type StandView,
   type TipoStand,
 } from "@/components/panel/stands-shared";
@@ -65,7 +63,6 @@ type Tab = "stands" | "devoluciones";
 
 export function StandsAdmin({
   stands,
-  patrocinios,
   pagos,
   devoluciones,
   asesores,
@@ -74,7 +71,6 @@ export function StandsAdmin({
   puedeEditarComercial,
 }: {
   stands: StandView[];
-  patrocinios: PatrocinioOption[];
   pagos: PagoStandView[];
   devoluciones: DevolucionView[];
   asesores: AsesorOption[];
@@ -345,14 +341,12 @@ export function StandsAdmin({
                 <tr className="border-b border-border text-left text-muted">
                   {puedeEditarComercial && <th className="w-8 p-3"></th>}
                   <th className="p-3 font-medium">Código</th>
-                  <th className="p-3 font-medium">Ubicación</th>
+                  <th className="p-3 font-medium">Nombre comercial</th>
                   <th className="p-3 font-medium">Pabellón</th>
                   <th className="p-3 font-medium">Tamaño</th>
                   <th className="p-3 font-medium">Precio</th>
                   <th className="p-3 font-medium">Estado</th>
                   <th className="p-3 font-medium">Estado venta</th>
-                  <th className="p-3 font-medium">Cliente</th>
-                  <th className="p-3 font-medium">Patrocinador</th>
                   <th className="p-3 font-medium">Acciones</th>
                 </tr>
               </thead>
@@ -446,34 +440,6 @@ export function StandsAdmin({
                           </span>
                         ) : (
                           <span className="text-muted">—</span>
-                        )}
-                      </td>
-                      <td className="p-3 text-muted">
-                        {s.cliente_nombre ?? "—"}
-                      </td>
-                      <td className="p-3">
-                        {puedeEditar ? (
-                          <select
-                            value={s.patrocinador_id ?? ""}
-                            disabled={pending}
-                            onChange={(e) => {
-                              const pid = e.target.value || null;
-                              startTransition(async () => {
-                                await vincularPatrocinador(s.id, pid);
-                              });
-                            }}
-                            className="rounded-md border border-border bg-surface-2 px-2 py-1 text-xs outline-none focus:border-brand"
-                          >
-                            <option value="">— Sin patrocinador —</option>
-                            {patrocinios.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.empresa}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          (patrocinios.find((p) => p.id === s.patrocinador_id)
-                            ?.empresa ?? "—")
                         )}
                       </td>
                       <td className="p-3">

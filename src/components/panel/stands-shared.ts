@@ -60,7 +60,8 @@ export interface StandView {
   precio: number;
   estado: "disponible" | "bloqueado_temporal" | "reservado" | "vendido";
   cliente_nombre: string | null;
-  patrocinador_id: string | null;
+  cliente_email: string | null;
+  cliente_telefono: string | null;
 
   pabellon: Pabellon | null;
   tipo_stand: TipoStand | null;
@@ -126,11 +127,6 @@ export interface HistorialEntradaView {
   valor_nuevo: string | null;
   usuario_nombre: string | null;
   creado_en: string;
-}
-
-export interface PatrocinioOption {
-  id: string;
-  empresa: string;
 }
 
 export interface AsesorOption {
@@ -314,7 +310,6 @@ const HISTORIAL_CAMPO_LABEL: Record<string, string> = {
   cliente_email: "Email del cliente (reserva)",
   cliente_telefono: "Teléfono del cliente (reserva)",
   bloqueado_hasta: "Bloqueo temporal hasta",
-  patrocinador_id: "Patrocinador vinculado",
   nombre: "Nombre comercial",
   tamano: "Tamaño",
   tarifa_zona_comidas: "Tarifa de zona de comidas",
