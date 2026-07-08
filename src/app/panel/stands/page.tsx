@@ -56,7 +56,12 @@ export default async function PanelStandsPage() {
       supabase
         .from("stands_devoluciones")
         .select(
-          "id, stand_id, pabellon, codigo, valor_pagado_hasta_devolucion, estado_devolucion, motivo, observaciones, fecha_devolucion",
+          `id, stand_id, pabellon, codigo, medida,
+           valor_sin_iva, valor_con_iva, precio_venta,
+           nombre_comercial, nombre_fiscal, nombre_persona_encargada,
+           numero_contacto, id_effi, ciudad,
+           valor_pagado_hasta_devolucion, medio_pago_primer_abono, forma_pago_restante,
+           estado_devolucion, motivo, observaciones, fecha_devolucion`,
         )
         .order("fecha_devolucion", { ascending: false, nullsFirst: false }),
       supabase

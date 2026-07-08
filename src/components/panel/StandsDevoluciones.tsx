@@ -3,8 +3,12 @@
 import { useMemo, useState } from "react";
 import { StandAvatar } from "@/components/StandAvatar";
 import {
+  FORMA_PAGO_LABEL,
+  MEDIO_PAGO_LABEL,
   PABELLON_LABEL,
   fmtCOP,
+  type FormaPagoRestante,
+  type MedioPago,
   type Pabellon,
   type StandView,
 } from "@/components/panel/stands-shared";
@@ -15,12 +19,27 @@ export type EstadoDevolucion =
   | "pendiente_documento_liquidacion"
   | "saldo_a_favor";
 
+// Datos propios de la devolución (hoja "Devoluciones" del Excel), NO
+// derivados de un join a `stands`: si el stand se libera o se revende
+// después, esos campos en `stands` ya no reflejan quién realmente desistió.
 export interface DevolucionView {
   id: string;
   stand_id: string | null;
   pabellon: Pabellon | null;
   codigo: string | null;
+  medida: string | null;
+  valor_sin_iva: number | null;
+  valor_con_iva: number | null;
+  precio_venta: number | null;
+  nombre_comercial: string | null;
+  nombre_fiscal: string | null;
+  nombre_persona_encargada: string | null;
+  numero_contacto: string | null;
+  id_effi: string | null;
+  ciudad: string | null;
   valor_pagado_hasta_devolucion: number | null;
+  medio_pago_primer_abono: MedioPago | null;
+  forma_pago_restante: FormaPagoRestante | null;
   estado_devolucion: EstadoDevolucion | null;
   motivo: string | null;
   observaciones: string | null;
@@ -105,12 +124,22 @@ export function StandsDevoluciones({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-muted">
-              <th className="p-3 font-medium">Código</th>
-              <th className="p-3 font-medium">Nombre comercial</th>
               <th className="p-3 font-medium">Pabellón</th>
-              <th className="p-3 font-medium">Tamaño</th>
-              <th className="p-3 font-medium">Asesor</th>
-              <th className="p-3 font-medium">Valor pagado</th>
+              <th className="p-3 font-medium">Código</th>
+              <th className="p-3 font-medium">Medida</th>
+              <th className="p-3 font-medium">Valor sin IVA</th>
+              <th className="p-3 font-medium">Valor con IVA</th>
+              <th className="p-3 font-medium">Precio de venta</th>
+              <th className="p-3 font-medium">Nombre comercial</th>
+              <th className="p-3 font-medium">Nombre fiscal</th>
+              <th className="p-3 font-medium">Persona encargada</th>
+              <th className="p-3 font-medium">Contacto</th>
+              <th className="p-3 font-medium">ID Effi</th>
+              <th className="p-3 font-medium">Ciudad</th>
+              <th className="p-3 font-medium">Abonos</th>
+              <th className="p-3 font-medium">Valor restante</th>
+              <th className="p-3 font-medium">Medio de pago 1er abono</th>
+              <th className="p-3 font-medium">Cómo paga el restante</th>
               <th className="p-3 font-medium">Estado devolución</th>
               <th className="p-3 font-medium">Motivo</th>
               <th className="p-3 font-medium">Fecha</th>
@@ -121,14 +150,17 @@ export function StandsDevoluciones({
           <tbody>
             {visibles.length === 0 && (
               <tr>
-                <td colSpan={11} className="p-6 text-center text-muted">
+                <td colSpan={21} className="p-6 text-center text-muted">
                   Sin devoluciones para este filtro.
                 </td>
               </tr>
             )}
             {visibles.map((d) => {
               const stand = d.stand_id ? standsPorId.get(d.stand_id) : null;
-              const pabellon = stand?.pabellon ?? d.pabellon;
+              const valorRestante =
+                d.precio_venta != null
+                  ? d.precio_venta - (d.valor_pagado_hasta_devolucion ?? 0)
+                  : null;
               return (
                 <tr
                   key={d.id}
@@ -138,29 +170,57 @@ export function StandsDevoluciones({
                       : ""
                   }`}
                 >
+                  <td className="p-3 text-muted">
+                    {d.pabellon ? PABELLON_LABEL[d.pabellon] : "—"}
+                  </td>
                   <td className="p-3 font-medium">
                     <div className="flex items-center gap-2">
                       {stand && (
                         <StandAvatar
                           logoUrl={stand.logo_url}
-                          nombre={stand.nombre}
+                          nombre={d.nombre_comercial}
                           size={26}
                         />
                       )}
-                      {d.codigo ?? stand?.codigo ?? "—"}
+                      {d.codigo ?? "—"}
                     </div>
                   </td>
-                  <td className="p-3 text-muted">{stand?.nombre ?? "—"}</td>
-                  <td className="p-3 text-muted">
-                    {pabellon ? PABELLON_LABEL[pabellon] : "—"}
+                  <td className="p-3 text-muted">{d.medida ?? "—"}</td>
+                  <td className="p-3">
+                    {d.valor_sin_iva != null ? fmtCOP(d.valor_sin_iva) : "—"}
                   </td>
-                  <td className="p-3 text-muted">{stand?.tamano ?? "—"}</td>
-                  <td className="p-3 text-muted">
-                    {stand?.asesor_nombre ?? "—"}
+                  <td className="p-3">
+                    {d.valor_con_iva != null ? fmtCOP(d.valor_con_iva) : "—"}
                   </td>
+                  <td className="p-3">
+                    {d.precio_venta != null ? fmtCOP(d.precio_venta) : "—"}
+                  </td>
+                  <td className="p-3 text-muted">
+                    {d.nombre_comercial ?? "—"}
+                  </td>
+                  <td className="p-3 text-muted">{d.nombre_fiscal ?? "—"}</td>
+                  <td className="p-3 text-muted">
+                    {d.nombre_persona_encargada ?? "—"}
+                  </td>
+                  <td className="p-3 text-muted">{d.numero_contacto ?? "—"}</td>
+                  <td className="p-3 text-muted">{d.id_effi ?? "—"}</td>
+                  <td className="p-3 text-muted">{d.ciudad ?? "—"}</td>
                   <td className="p-3">
                     {d.valor_pagado_hasta_devolucion != null
                       ? fmtCOP(d.valor_pagado_hasta_devolucion)
+                      : "—"}
+                  </td>
+                  <td className="p-3">
+                    {valorRestante != null ? fmtCOP(valorRestante) : "—"}
+                  </td>
+                  <td className="p-3 text-muted">
+                    {d.medio_pago_primer_abono
+                      ? MEDIO_PAGO_LABEL[d.medio_pago_primer_abono]
+                      : "—"}
+                  </td>
+                  <td className="p-3 text-muted">
+                    {d.forma_pago_restante
+                      ? FORMA_PAGO_LABEL[d.forma_pago_restante]
                       : "—"}
                   </td>
                   <td className="p-3">
@@ -185,7 +245,7 @@ export function StandsDevoluciones({
                         onClick={() => onVerStand(stand)}
                         className="rounded-md border border-border px-2 py-1 text-xs text-brand hover:border-brand"
                       >
-                        Ver detalle
+                        Ver stand actual
                       </button>
                     )}
                   </td>
