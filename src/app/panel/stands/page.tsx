@@ -41,7 +41,10 @@ export default async function PanelStandsPage() {
            imagen_enviada, formulario_directorio_lleno, paz_y_salvo,
            observaciones_venta, observaciones_facturacion,
            asesor_id, asesores_comerciales(nombre_completo), stand_principal_id,
-           token_publico, logo_url`,
+           token_publico, logo_url,
+           directorio_pais, directorio_direccion, directorio_telefono,
+           directorio_email, directorio_sitio_web, directorio_descripcion,
+           directorio_redes_sociales`,
         )
         .order("codigo"),
       supabase.from("patrocinios").select("id, empresa").order("empresa"),

@@ -63,9 +63,11 @@ export async function subirLogoStandPublico(
   // logo viejo (misma URL) si el cliente reemplaza el archivo más tarde.
   const logoUrl = `${pub.publicUrl}?actualizado=${encodeURIComponent(new Date().toISOString())}`;
 
+  // logo e imagen son el mismo archivo de cara al cliente: cargar el logo
+  // también cierra el check "imagen_enviada" del checklist.
   const { error: errorUpdate } = await admin
     .from("stands")
-    .update({ logo_url: logoUrl, logo_recibido: true })
+    .update({ logo_url: logoUrl, logo_recibido: true, imagen_enviada: true })
     .eq("id", stand.id);
   if (errorUpdate) {
     return {
@@ -73,6 +75,72 @@ export async function subirLogoStandPublico(
       mensaje: "El logo se subió pero no se pudo guardar. Avisá al equipo.",
     };
   }
+
+  revalidatePath(`/mi-stand/${token}`);
+  revalidatePath("/panel/stands");
+  return { ok: true };
+}
+
+export interface FormularioDirectorioInput {
+  nombre: string;
+  ciudad: string;
+  pais: string;
+  direccion: string;
+  telefono: string;
+  email: string;
+  sitioWeb: string;
+  descripcion: string;
+  redesSociales: string;
+}
+
+// Guarda los datos de contacto para el futuro Directorio de Marcas. Requiere
+// nombre, ciudad, país, teléfono y correo (lo mínimo para que un posible
+// cliente pueda contactar a la marca); el resto es opcional. Al completarse
+// esos campos marca formulario_directorio_lleno = true automáticamente.
+export async function guardarFormularioDirectorio(
+  token: string,
+  input: FormularioDirectorioInput,
+): Promise<AccionResult> {
+  const nombre = input.nombre.trim();
+  const ciudad = input.ciudad.trim();
+  const pais = input.pais.trim();
+  const telefono = input.telefono.trim();
+  const email = input.email.trim();
+
+  if (!nombre || !ciudad || !pais || !telefono || !email) {
+    return {
+      ok: false,
+      mensaje:
+        "Completá al menos nombre, ciudad, país, teléfono y correo para terminar el formulario.",
+    };
+  }
+
+  const admin = createAdminClient();
+  const { data: stand, error: errorStand } = await admin
+    .from("stands")
+    .select("id")
+    .eq("token_publico", token)
+    .single();
+  if (errorStand || !stand) {
+    return { ok: false, mensaje: "Link inválido." };
+  }
+
+  const { error } = await admin
+    .from("stands")
+    .update({
+      nombre,
+      ciudad,
+      directorio_pais: pais,
+      directorio_direccion: input.direccion.trim() || null,
+      directorio_telefono: telefono,
+      directorio_email: email,
+      directorio_sitio_web: input.sitioWeb.trim() || null,
+      directorio_descripcion: input.descripcion.trim() || null,
+      directorio_redes_sociales: input.redesSociales.trim() || null,
+      formulario_directorio_lleno: true,
+    })
+    .eq("id", stand.id);
+  if (error) return { ok: false, mensaje: error.message };
 
   revalidatePath(`/mi-stand/${token}`);
   revalidatePath("/panel/stands");

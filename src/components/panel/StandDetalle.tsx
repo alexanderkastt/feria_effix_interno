@@ -225,6 +225,25 @@ export function StandDetalle({
                 bloque
               />
             </InfoCard>
+
+            <InfoCard
+              titulo={`Directorio de marcas ${stand.formulario_directorio_lleno ? "✓ completo" : "· pendiente"}`}
+            >
+              <Dato label="País" valor={stand.directorio_pais} />
+              <Dato label="Dirección" valor={stand.directorio_direccion} />
+              <Dato label="Teléfono" valor={stand.directorio_telefono} />
+              <Dato label="Email" valor={stand.directorio_email} />
+              <Dato label="Sitio web" valor={stand.directorio_sitio_web} />
+              <Dato
+                label="Redes sociales"
+                valor={stand.directorio_redes_sociales}
+              />
+              <Dato
+                label="Descripción"
+                valor={stand.directorio_descripcion}
+                bloque
+              />
+            </InfoCard>
           </>
         )}
 
@@ -557,6 +576,27 @@ function EditarDatosComercialesForm({
   const [observacionesFacturacion, setObservacionesFacturacion] = useState(
     stand.observaciones_facturacion ?? "",
   );
+  const [directorioPais, setDirectorioPais] = useState(
+    stand.directorio_pais ?? "",
+  );
+  const [directorioDireccion, setDirectorioDireccion] = useState(
+    stand.directorio_direccion ?? "",
+  );
+  const [directorioTelefono, setDirectorioTelefono] = useState(
+    stand.directorio_telefono ?? "",
+  );
+  const [directorioEmail, setDirectorioEmail] = useState(
+    stand.directorio_email ?? "",
+  );
+  const [directorioSitioWeb, setDirectorioSitioWeb] = useState(
+    stand.directorio_sitio_web ?? "",
+  );
+  const [directorioDescripcion, setDirectorioDescripcion] = useState(
+    stand.directorio_descripcion ?? "",
+  );
+  const [directorioRedesSociales, setDirectorioRedesSociales] = useState(
+    stand.directorio_redes_sociales ?? "",
+  );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -590,6 +630,13 @@ function EditarDatosComercialesForm({
       observaciones_venta: observacionesVenta.trim() || null,
       observaciones_facturacion: observacionesFacturacion.trim() || null,
       obsequio_de: obsequioDe.trim() || null,
+      directorio_pais: directorioPais.trim() || null,
+      directorio_direccion: directorioDireccion.trim() || null,
+      directorio_telefono: directorioTelefono.trim() || null,
+      directorio_email: directorioEmail.trim() || null,
+      directorio_sitio_web: directorioSitioWeb.trim() || null,
+      directorio_descripcion: directorioDescripcion.trim() || null,
+      directorio_redes_sociales: directorioRedesSociales.trim() || null,
     };
     startTransition(async () => {
       const r = await actualizarStandComercial(stand.id, input);
@@ -806,6 +853,66 @@ function EditarDatosComercialesForm({
             onChange={(e) => setObservacionesFacturacion(e.target.value)}
             rows={2}
             className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-brand"
+          />
+        </Campo>
+      </div>
+
+      <div className="space-y-3 rounded-lg border border-border bg-surface-2 p-4">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
+          Directorio de marcas{" "}
+          {stand.formulario_directorio_lleno ? "✓ completo" : "· pendiente"}
+        </h3>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Campo label="País">
+            <input
+              value={directorioPais}
+              onChange={(e) => setDirectorioPais(e.target.value)}
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </Campo>
+          <Campo label="Dirección">
+            <input
+              value={directorioDireccion}
+              onChange={(e) => setDirectorioDireccion(e.target.value)}
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </Campo>
+          <Campo label="Teléfono de contacto">
+            <input
+              value={directorioTelefono}
+              onChange={(e) => setDirectorioTelefono(e.target.value)}
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </Campo>
+          <Campo label="Email de contacto">
+            <input
+              type="email"
+              value={directorioEmail}
+              onChange={(e) => setDirectorioEmail(e.target.value)}
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </Campo>
+          <Campo label="Sitio web">
+            <input
+              value={directorioSitioWeb}
+              onChange={(e) => setDirectorioSitioWeb(e.target.value)}
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </Campo>
+          <Campo label="Redes sociales">
+            <input
+              value={directorioRedesSociales}
+              onChange={(e) => setDirectorioRedesSociales(e.target.value)}
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </Campo>
+        </div>
+        <Campo label="Descripción de la marca">
+          <textarea
+            value={directorioDescripcion}
+            onChange={(e) => setDirectorioDescripcion(e.target.value)}
+            rows={2}
+            className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
           />
         </Campo>
       </div>

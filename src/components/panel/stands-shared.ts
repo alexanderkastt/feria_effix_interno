@@ -104,6 +104,14 @@ export interface StandView {
   stand_principal_id: string | null;
   token_publico: string;
   logo_url: string | null;
+
+  directorio_pais: string | null;
+  directorio_direccion: string | null;
+  directorio_telefono: string | null;
+  directorio_email: string | null;
+  directorio_sitio_web: string | null;
+  directorio_descripcion: string | null;
+  directorio_redes_sociales: string | null;
 }
 
 export interface PatrocinioOption {

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { StandAvatar } from "@/components/StandAvatar";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { FormularioDirectorio } from "./FormularioDirectorio";
 import { SubirLogoForm } from "./SubirLogoForm";
 import {
   CATEGORIA_LABEL,
@@ -53,7 +54,10 @@ export default async function MiStandPage({
        fecha_venta, numero_factura, obsequio_de,
        contrato_entregado, manual_entregado, logo_recibido, marcado_en_mapa,
        publicado_web, imagen_enviada, formulario_directorio_lleno, paz_y_salvo,
-       pantallazo_aceptacion, aprobacion_tesoreria, facturado`,
+       pantallazo_aceptacion, aprobacion_tesoreria, facturado,
+       directorio_pais, directorio_direccion, directorio_telefono,
+       directorio_email, directorio_sitio_web, directorio_descripcion,
+       directorio_redes_sociales`,
     )
     .eq("token_publico", token)
     .single();
@@ -219,6 +223,32 @@ export default async function MiStandPage({
             <Row k="Obsequio de" v={stand.obsequio_de} />
           )}
         </div>
+      </section>
+
+      <section className="mb-6 rounded-xl border border-border bg-surface p-5">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
+          Formulario de directorio
+        </h2>
+        <p className="mb-4 text-sm text-muted">
+          Estos datos se van a usar en el futuro Directorio de Marcas de Feria
+          Effix, para que posibles clientes te puedan contactar. Completá lo que
+          falte (ya precargamos lo que tenemos).
+        </p>
+        <FormularioDirectorio
+          token={token}
+          completo={stand.formulario_directorio_lleno}
+          inicial={{
+            nombre: stand.nombre ?? "",
+            ciudad: stand.ciudad ?? "",
+            pais: stand.directorio_pais ?? "",
+            direccion: stand.directorio_direccion ?? "",
+            telefono: stand.directorio_telefono ?? "",
+            email: stand.directorio_email ?? "",
+            sitioWeb: stand.directorio_sitio_web ?? "",
+            descripcion: stand.directorio_descripcion ?? "",
+            redesSociales: stand.directorio_redes_sociales ?? "",
+          }}
+        />
       </section>
 
       <section className="mb-6 rounded-xl border border-border bg-surface p-5">

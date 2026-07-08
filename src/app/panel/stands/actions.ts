@@ -249,6 +249,13 @@ export interface DatosComercialesStandInput {
   observaciones_venta: string | null;
   observaciones_facturacion: string | null;
   obsequio_de: string | null;
+  directorio_pais: string | null;
+  directorio_direccion: string | null;
+  directorio_telefono: string | null;
+  directorio_email: string | null;
+  directorio_sitio_web: string | null;
+  directorio_descripcion: string | null;
+  directorio_redes_sociales: string | null;
 }
 
 // Edición completa de los datos comerciales/de cliente de un stand ya
