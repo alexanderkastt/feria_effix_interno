@@ -165,6 +165,14 @@ type FormaPagoRestante =
 
 type FrecuenciaParticipacion = "primera_vez" | "segunda_vez" | "mas_de_tres";
 
+type EstadoVenta =
+  | "disponible"
+  | "reservado"
+  | "pago_100"
+  | "sin_pagos"
+  | "canje"
+  | "obsequio_directivo";
+
 export interface NuevoStandInput {
   codigo: string;
   nombre: string | null;
@@ -220,6 +228,7 @@ export interface DatosComercialesStandInput {
   tipo_stand: TipoStand | null;
   tamano: string | null;
   tarifa_zona_comidas: boolean;
+  estado_venta: EstadoVenta | null;
   categoria_cliente: CategoriaCliente | null;
   ciudad: string | null;
   nombre_fiscal: string | null;

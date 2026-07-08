@@ -31,6 +31,7 @@ import {
   parsearTamano,
   type AsesorOption,
   type CategoriaCliente,
+  type EstadoVenta,
   type FormaPagoRestante,
   type FrecuenciaParticipacion,
   type HistorialEntradaView,
@@ -46,6 +47,7 @@ const PABELLONES = Object.keys(PABELLON_LABEL) as Pabellon[];
 const TIPOS_STAND = Object.keys(TIPO_STAND_LABEL) as TipoStand[];
 const CATEGORIAS = Object.keys(CATEGORIA_LABEL) as CategoriaCliente[];
 const FORMAS_PAGO = Object.keys(FORMA_PAGO_LABEL) as FormaPagoRestante[];
+const ESTADOS_VENTA = Object.keys(ESTADO_VENTA_LABEL) as EstadoVenta[];
 const FRECUENCIAS = Object.keys(FRECUENCIA_LABEL) as FrecuenciaParticipacion[];
 
 const CHECKLIST_ITEMS: { campo: ChecklistCampoStand; label: string }[] = [
@@ -654,6 +656,9 @@ function EditarDatosComercialesForm({
   const [categoriaCliente, setCategoriaCliente] = useState<
     CategoriaCliente | ""
   >(stand.categoria_cliente ?? "");
+  const [estadoVenta, setEstadoVenta] = useState<EstadoVenta | "">(
+    stand.estado_venta ?? "",
+  );
   const [ciudad, setCiudad] = useState(stand.ciudad ?? "");
   const [nombreFiscal, setNombreFiscal] = useState(stand.nombre_fiscal ?? "");
   const [nombrePersonaEncargada, setNombrePersonaEncargada] = useState(
@@ -730,6 +735,7 @@ function EditarDatosComercialesForm({
       tipo_stand: tipoStand || null,
       tamano: tamano || null,
       tarifa_zona_comidas: precio.esZonaComidas,
+      estado_venta: estadoVenta || null,
       categoria_cliente: categoriaCliente || null,
       ciudad: ciudad.trim() || null,
       nombre_fiscal: nombreFiscal.trim() || null,
@@ -915,6 +921,23 @@ function EditarDatosComercialesForm({
               />
             </Campo>
           </div>
+
+          <Campo label="Estado de venta">
+            <select
+              value={estadoVenta}
+              onChange={(e) =>
+                setEstadoVenta(e.target.value as EstadoVenta | "")
+              }
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
+            >
+              <option value="">— Sin definir —</option>
+              {ESTADOS_VENTA.map((e) => (
+                <option key={e} value={e}>
+                  {ESTADO_VENTA_LABEL[e]}
+                </option>
+              ))}
+            </select>
+          </Campo>
 
           <PrecioStandEditor precio={precio} />
 

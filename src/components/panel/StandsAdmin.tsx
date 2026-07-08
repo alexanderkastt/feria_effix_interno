@@ -2,10 +2,12 @@
 
 import { useMemo, useState, useTransition } from "react";
 import {
+  actualizarStandComercial,
   cambiarEstadoStand,
   crearStand,
   desfusionarStand,
   fusionarStands,
+  type DatosComercialesStandInput,
   type NuevoStandInput,
 } from "@/app/panel/stands/actions";
 import { StandAvatar } from "@/components/StandAvatar";
@@ -21,6 +23,7 @@ import {
   CATEGORIA_LABEL,
   ESTADO_VENTA_LABEL,
   ESTADO_VENTA_STYLE,
+  FORMA_PAGO_LABEL,
   FRECUENCIA_LABEL,
   PABELLON_LABEL,
   TIPO_STAND_LABEL,
@@ -29,6 +32,7 @@ import {
   type AsesorOption,
   type CategoriaCliente,
   type EstadoVenta,
+  type FormaPagoRestante,
   type FrecuenciaParticipacion,
   type HistorialEntradaView,
   type Pabellon,
@@ -44,6 +48,7 @@ const FRECUENCIAS = Object.keys(FRECUENCIA_LABEL) as FrecuenciaParticipacion[];
 const TIPOS_STAND = Object.keys(TIPO_STAND_LABEL) as TipoStand[];
 const CATEGORIAS = Object.keys(CATEGORIA_LABEL) as CategoriaCliente[];
 const ESTADOS_VENTA = Object.keys(ESTADO_VENTA_LABEL) as EstadoVenta[];
+const FORMAS_PAGO = Object.keys(FORMA_PAGO_LABEL) as FormaPagoRestante[];
 
 const ESTADOS: StandView["estado"][] = [
   "disponible",
@@ -84,9 +89,10 @@ export function StandsAdmin({
   const [nuevoAbierto, setNuevoAbierto] = useState(false);
   const [paraFusionar, setParaFusionar] = useState<Set<string>>(new Set());
   const [fusionAbierta, setFusionAbierta] = useState(false);
-  const [confirmarLiberar, setConfirmarLiberar] = useState<StandView | null>(
-    null,
-  );
+  const [confirmarCambioEstado, setConfirmarCambioEstado] = useState<{
+    stand: StandView;
+    nuevo: StandView["estado"];
+  } | null>(null);
 
   const [busqueda, setBusqueda] = useState("");
   const [filtroPabellon, setFiltroPabellon] = useState<Pabellon | "todos">(
@@ -407,17 +413,8 @@ export function StandsAdmin({
                             onChange={(e) => {
                               const nuevo = e.target
                                 .value as StandView["estado"];
-                              if (
-                                nuevo === "disponible" &&
-                                s.estado !== "disponible" &&
-                                s.cliente_nombre
-                              ) {
-                                setConfirmarLiberar(s);
-                                return;
-                              }
-                              startTransition(async () => {
-                                await cambiarEstadoStand(s.id, nuevo);
-                              });
+                              if (nuevo === s.estado) return;
+                              setConfirmarCambioEstado({ stand: s, nuevo });
                             }}
                             className="rounded-md border border-border bg-surface-2 px-2 py-1 text-xs outline-none focus:border-brand"
                           >
@@ -503,20 +500,118 @@ export function StandsAdmin({
         />
       )}
 
-      {confirmarLiberar && (
-        <ConfirmarLiberarModal
-          stand={confirmarLiberar}
+      {confirmarCambioEstado && (
+        <ConfirmarCambioEstadoModal
+          stand={confirmarCambioEstado.stand}
+          nuevo={confirmarCambioEstado.nuevo}
+          asesores={asesores}
+          puedeEditarComercial={puedeEditarComercial}
           pending={pending}
-          onCancelar={() => setConfirmarLiberar(null)}
-          onConfirmar={() => {
-            const id = confirmarLiberar.id;
+          onCancelar={() => setConfirmarCambioEstado(null)}
+          onConfirmar={(datosComerciales) => {
+            const { stand, nuevo } = confirmarCambioEstado;
             startTransition(async () => {
-              await cambiarEstadoStand(id, "disponible");
-              setConfirmarLiberar(null);
+              if (datosComerciales) {
+                await actualizarStandComercial(stand.id, datosComerciales);
+              }
+              await cambiarEstadoStand(stand.id, nuevo);
+              setConfirmarCambioEstado(null);
             });
           }}
         />
       )}
+    </div>
+  );
+}
+
+// Cualquier cambio en el select de Estado pasa por acá. 3 casos:
+//  - liberar (-> disponible con cliente cargado): aviso fuerte, hay que
+//    escribir "LIBERAR" (esa acción borra los datos de la reserva).
+//  - disponible -> cualquier otro estado: pide de una los datos del cliente
+//    y la negociación completa (para no dejarlo a medio cargar).
+//  - cualquier otro cambio: confirmación simple.
+function ConfirmarCambioEstadoModal({
+  stand,
+  nuevo,
+  asesores,
+  puedeEditarComercial,
+  pending,
+  onCancelar,
+  onConfirmar,
+}: {
+  stand: StandView;
+  nuevo: StandView["estado"];
+  asesores: AsesorOption[];
+  puedeEditarComercial: boolean;
+  pending: boolean;
+  onCancelar: () => void;
+  onConfirmar: (datosComerciales?: DatosComercialesStandInput) => void;
+}) {
+  const esLiberar =
+    nuevo === "disponible" &&
+    stand.estado !== "disponible" &&
+    Boolean(stand.cliente_nombre);
+  const esNegociacionNueva =
+    !esLiberar &&
+    stand.estado === "disponible" &&
+    nuevo !== "disponible" &&
+    puedeEditarComercial;
+
+  if (esLiberar) {
+    return (
+      <ConfirmarLiberarModal
+        stand={stand}
+        pending={pending}
+        onCancelar={onCancelar}
+        onConfirmar={() => onConfirmar()}
+      />
+    );
+  }
+
+  if (esNegociacionNueva) {
+    return (
+      <CapturarNegociacionModal
+        stand={stand}
+        nuevo={nuevo}
+        asesores={asesores}
+        pending={pending}
+        onCancelar={onCancelar}
+        onConfirmar={onConfirmar}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4"
+      onClick={onCancelar}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="my-8 w-full max-w-sm space-y-4 rounded-xl border border-border bg-surface p-6"
+      >
+        <h2 className="text-lg font-semibold">Cambiar estado</h2>
+        <p className="text-sm text-muted">
+          Vas a cambiar el stand <strong>{stand.codigo}</strong> de{" "}
+          <strong>{ESTADO_LABEL[stand.estado]}</strong> a{" "}
+          <strong>{ESTADO_LABEL[nuevo]}</strong>.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancelar}
+            className="flex-1 rounded-md border border-border px-4 py-2 text-sm text-muted hover:text-foreground"
+          >
+            Cancelar
+          </button>
+          <button
+            disabled={pending}
+            onClick={() => onConfirmar()}
+            className="flex-1 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-strong disabled:opacity-60"
+          >
+            {pending ? "Guardando…" : "Confirmar"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -580,6 +675,240 @@ function ConfirmarLiberarModal({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Se muestra cuando un stand pasa de Disponible a cualquier otro estado:
+// pide de una los datos del cliente y la negociación (en vez de dejar el
+// stand "reservado" sin saber quién ni en qué condiciones). tamaño/pabellón
+// del stand no se tocan acá (son atributos físicos, no de la venta).
+function CapturarNegociacionModal({
+  stand,
+  nuevo,
+  asesores,
+  pending,
+  onCancelar,
+  onConfirmar,
+}: {
+  stand: StandView;
+  nuevo: StandView["estado"];
+  asesores: AsesorOption[];
+  pending: boolean;
+  onCancelar: () => void;
+  onConfirmar: (datosComerciales: DatosComercialesStandInput) => void;
+}) {
+  const [nombre, setNombre] = useState(stand.nombre ?? "");
+  const [categoriaCliente, setCategoriaCliente] = useState<
+    CategoriaCliente | ""
+  >(stand.categoria_cliente ?? "");
+  const [ciudad, setCiudad] = useState(stand.ciudad ?? "");
+  const [asesorId, setAsesorId] = useState(stand.asesor_id ?? "");
+  const [estadoVenta, setEstadoVenta] = useState<EstadoVenta | "">(
+    stand.estado_venta ??
+      (nuevo === "vendido"
+        ? "pago_100"
+        : nuevo === "reservado"
+          ? "reservado"
+          : ""),
+  );
+  const [precioVenta, setPrecioVenta] = useState(
+    stand.precio_venta != null ? String(stand.precio_venta) : "",
+  );
+  const [formaPagoRestante, setFormaPagoRestante] = useState<
+    FormaPagoRestante | ""
+  >(stand.forma_pago_restante ?? "");
+  const [fechaVenta, setFechaVenta] = useState(stand.fecha_venta ?? "");
+  const [error, setError] = useState<string | null>(null);
+
+  const precio = usePrecioStand(stand.tamano ?? "", {
+    modo: stand.valor_sin_iva != null ? "manual" : "estandar",
+    manualSinIva: stand.valor_sin_iva,
+    esZonaComidas: stand.tarifa_zona_comidas,
+  });
+
+  function guardar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!nombre.trim()) {
+      setError("El nombre del cliente es obligatorio.");
+      return;
+    }
+    setError(null);
+    const datos: DatosComercialesStandInput = {
+      nombre: nombre.trim() || null,
+      pabellon: stand.pabellon,
+      tipo_stand: stand.tipo_stand,
+      tamano: stand.tamano,
+      tarifa_zona_comidas: precio.esZonaComidas,
+      estado_venta: estadoVenta || null,
+      categoria_cliente: categoriaCliente || null,
+      ciudad: ciudad.trim() || null,
+      nombre_fiscal: stand.nombre_fiscal,
+      nombre_persona_encargada: stand.nombre_persona_encargada,
+      id_effi: stand.id_effi,
+      asesor_id: asesorId || null,
+      precio: precio.valorConIva ?? stand.precio,
+      valor_sin_iva: precio.valorSinIva,
+      valor_con_iva: precio.valorConIva,
+      precio_venta: precioVenta ? Number(precioVenta) : null,
+      forma_pago_restante: formaPagoRestante || null,
+      primera_vez_en_feria: stand.primera_vez_en_feria,
+      numero_factura: stand.numero_factura,
+      fecha_venta: fechaVenta || null,
+      observaciones_venta: stand.observaciones_venta,
+      observaciones_facturacion: stand.observaciones_facturacion,
+      obsequio_de: stand.obsequio_de,
+      directorio_pais: stand.directorio_pais,
+      directorio_direccion: stand.directorio_direccion,
+      directorio_telefono: stand.directorio_telefono,
+      directorio_email: stand.directorio_email,
+      directorio_sitio_web: stand.directorio_sitio_web,
+      directorio_descripcion: stand.directorio_descripcion,
+      directorio_instagram: stand.directorio_instagram,
+      directorio_facebook: stand.directorio_facebook,
+      directorio_tiktok: stand.directorio_tiktok,
+      directorio_linkedin: stand.directorio_linkedin,
+    };
+    onConfirmar(datos);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4"
+      onClick={onCancelar}
+    >
+      <form
+        onSubmit={guardar}
+        onClick={(e) => e.stopPropagation()}
+        className="my-8 w-full max-w-lg space-y-3 rounded-xl border border-border bg-surface p-6"
+      >
+        <h2 className="text-lg font-semibold">
+          Stand {stand.codigo} → {ESTADO_LABEL[nuevo]}
+        </h2>
+        <p className="text-sm text-muted">
+          Este stand estaba disponible. Antes de cambiarlo, cargá quién es el
+          cliente y los datos de la negociación.
+        </p>
+
+        <Campo label="Nombre del cliente *">
+          <input
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-brand"
+          />
+        </Campo>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo label="Ciudad">
+            <input
+              value={ciudad}
+              onChange={(e) => setCiudad(e.target.value)}
+              className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </Campo>
+          <Campo label="Categoría">
+            <select
+              value={categoriaCliente}
+              onChange={(e) =>
+                setCategoriaCliente(e.target.value as CategoriaCliente | "")
+              }
+              className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-brand"
+            >
+              <option value="">— Sin definir —</option>
+              {CATEGORIAS.map((c) => (
+                <option key={c} value={c}>
+                  {CATEGORIA_LABEL[c]}
+                </option>
+              ))}
+            </select>
+          </Campo>
+        </div>
+        <Campo label="Asesor comercial">
+          <select
+            value={asesorId}
+            onChange={(e) => setAsesorId(e.target.value)}
+            className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-brand"
+          >
+            <option value="">— Sin asignar —</option>
+            {asesores.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.nombre_completo}
+              </option>
+            ))}
+          </select>
+        </Campo>
+
+        <Campo label="Estado de venta">
+          <select
+            value={estadoVenta}
+            onChange={(e) => setEstadoVenta(e.target.value as EstadoVenta | "")}
+            className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-brand"
+          >
+            <option value="">— Sin definir —</option>
+            {ESTADOS_VENTA.map((ev) => (
+              <option key={ev} value={ev}>
+                {ESTADO_VENTA_LABEL[ev]}
+              </option>
+            ))}
+          </select>
+        </Campo>
+
+        <PrecioStandEditor precio={precio} />
+
+        <div className="grid grid-cols-2 gap-3">
+          <Campo label="Precio de venta real">
+            <input
+              value={precioVenta}
+              onChange={(e) => setPrecioVenta(e.target.value)}
+              type="number"
+              min="0"
+              className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </Campo>
+          <Campo label="Fecha de venta">
+            <input
+              value={fechaVenta ?? ""}
+              onChange={(e) => setFechaVenta(e.target.value)}
+              type="date"
+              className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </Campo>
+        </div>
+        <Campo label="Forma de pago restante">
+          <select
+            value={formaPagoRestante}
+            onChange={(e) =>
+              setFormaPagoRestante(e.target.value as FormaPagoRestante | "")
+            }
+            className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm outline-none focus:border-brand"
+          >
+            <option value="">— Sin definir —</option>
+            {FORMAS_PAGO.map((f) => (
+              <option key={f} value={f}>
+                {FORMA_PAGO_LABEL[f]}
+              </option>
+            ))}
+          </select>
+        </Campo>
+
+        {error && <p className="text-xs text-danger">{error}</p>}
+
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onCancelar}
+            className="flex-1 rounded-md border border-border px-4 py-2 text-sm text-muted hover:text-foreground"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={pending}
+            className="flex-1 rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-strong disabled:opacity-60"
+          >
+            {pending ? "Guardando…" : "Guardar y cambiar estado"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
