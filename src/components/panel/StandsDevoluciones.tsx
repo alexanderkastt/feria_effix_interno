@@ -3,9 +3,6 @@
 import { useMemo, useState } from "react";
 import { StandAvatar } from "@/components/StandAvatar";
 import {
-  ESTADO_STANDS_LABEL,
-  ESTADO_VENTA_LABEL,
-  ESTADO_VENTA_STYLE,
   PABELLON_LABEL,
   fmtCOP,
   type Pabellon,
@@ -110,13 +107,8 @@ export function StandsDevoluciones({
             <tr className="border-b border-border text-left text-muted">
               <th className="p-3 font-medium">Código</th>
               <th className="p-3 font-medium">Nombre comercial</th>
-              <th className="p-3 font-medium">Cliente</th>
-              <th className="p-3 font-medium">Ciudad</th>
               <th className="p-3 font-medium">Pabellón</th>
               <th className="p-3 font-medium">Tamaño</th>
-              <th className="p-3 font-medium">Precio</th>
-              <th className="p-3 font-medium">Estado</th>
-              <th className="p-3 font-medium">Estado venta</th>
               <th className="p-3 font-medium">Asesor</th>
               <th className="p-3 font-medium">Valor pagado</th>
               <th className="p-3 font-medium">Estado devolución</th>
@@ -129,7 +121,7 @@ export function StandsDevoluciones({
           <tbody>
             {visibles.length === 0 && (
               <tr>
-                <td colSpan={16} className="p-6 text-center text-muted">
+                <td colSpan={11} className="p-6 text-center text-muted">
                   Sin devoluciones para este filtro.
                 </td>
               </tr>
@@ -160,28 +152,9 @@ export function StandsDevoluciones({
                   </td>
                   <td className="p-3 text-muted">{stand?.nombre ?? "—"}</td>
                   <td className="p-3 text-muted">
-                    {stand?.cliente_nombre ?? "—"}
-                  </td>
-                  <td className="p-3 text-muted">{stand?.ciudad ?? "—"}</td>
-                  <td className="p-3 text-muted">
                     {pabellon ? PABELLON_LABEL[pabellon] : "—"}
                   </td>
                   <td className="p-3 text-muted">{stand?.tamano ?? "—"}</td>
-                  <td className="p-3">{stand ? fmtCOP(stand.precio) : "—"}</td>
-                  <td className="p-3 text-muted">
-                    {stand ? ESTADO_STANDS_LABEL[stand.estado] : "—"}
-                  </td>
-                  <td className="p-3">
-                    {stand?.estado_venta ? (
-                      <span
-                        className={`rounded-full border px-2 py-0.5 text-xs ${ESTADO_VENTA_STYLE[stand.estado_venta]}`}
-                      >
-                        {ESTADO_VENTA_LABEL[stand.estado_venta]}
-                      </span>
-                    ) : (
-                      <span className="text-muted">—</span>
-                    )}
-                  </td>
                   <td className="p-3 text-muted">
                     {stand?.asesor_nombre ?? "—"}
                   </td>
