@@ -16,7 +16,8 @@ export function StandAvatar({
       <img
         src={logoUrl}
         alt={nombre ? `Logo de ${nombre}` : "Logo"}
-        className="shrink-0 rounded-full border border-border bg-white object-cover"
+        title={nombre ?? undefined}
+        className="shrink-0 rounded-full border border-border bg-white object-cover ring-2 ring-brand/20"
         style={{ width: size, height: size }}
       />
     );
@@ -24,8 +25,9 @@ export function StandAvatar({
   const inicial = (nombre ?? "?").trim().charAt(0).toUpperCase() || "?";
   return (
     <div
-      className="grid shrink-0 place-items-center rounded-full border border-border bg-surface-2 font-semibold text-muted"
-      style={{ width: size, height: size, fontSize: size * 0.4 }}
+      title={nombre ? `${nombre} (sin logo)` : "Sin logo"}
+      className="grid shrink-0 place-items-center rounded-full border border-brand/25 bg-brand-soft/40 font-semibold text-brand"
+      style={{ width: size, height: size, fontSize: size * 0.42 }}
     >
       {inicial}
     </div>

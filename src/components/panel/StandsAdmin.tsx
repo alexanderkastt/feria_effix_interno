@@ -381,7 +381,7 @@ export function StandsAdmin({
                           <StandAvatar
                             logoUrl={s.logo_url}
                             nombre={s.nombre}
-                            size={24}
+                            size={30}
                           />
                           <div>
                             {s.codigo}
