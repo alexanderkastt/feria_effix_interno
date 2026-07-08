@@ -9,6 +9,7 @@ import {
   vincularPatrocinador,
   type NuevoStandInput,
 } from "@/app/panel/stands/actions";
+import { StandAvatar } from "@/components/StandAvatar";
 import { StandDetalle } from "@/components/panel/StandDetalle";
 import { StandsDevoluciones } from "@/components/panel/StandsDevoluciones";
 import type { DevolucionView } from "@/components/panel/StandsDevoluciones";
@@ -359,18 +360,27 @@ export function StandsAdmin({
                         </td>
                       )}
                       <td className="p-3 font-medium">
-                        {s.codigo}
-                        {hijos.length > 0 && (
-                          <span className="ml-2 rounded-full border border-brand/50 bg-brand-soft/20 px-1.5 py-0.5 text-[10px] font-normal text-brand">
-                            +{hijos.length} fusionado
-                            {hijos.length === 1 ? "" : "s"}
-                          </span>
-                        )}
-                        {principal && (
-                          <p className="mt-0.5 text-[11px] font-normal text-muted">
-                            ↳ fusionado con {principal.codigo}
-                          </p>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <StandAvatar
+                            logoUrl={s.logo_url}
+                            nombre={s.nombre}
+                            size={24}
+                          />
+                          <div>
+                            {s.codigo}
+                            {hijos.length > 0 && (
+                              <span className="ml-2 rounded-full border border-brand/50 bg-brand-soft/20 px-1.5 py-0.5 text-[10px] font-normal text-brand">
+                                +{hijos.length} fusionado
+                                {hijos.length === 1 ? "" : "s"}
+                              </span>
+                            )}
+                            {principal && (
+                              <p className="mt-0.5 text-[11px] font-normal text-muted">
+                                ↳ fusionado con {principal.codigo}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </td>
                       <td className="p-3 text-muted">{s.nombre ?? "—"}</td>
                       <td className="p-3 text-muted">

@@ -1,30 +1,23 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { StandAvatar } from "@/components/StandAvatar";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SubirLogoForm } from "./SubirLogoForm";
+import {
+  CATEGORIA_LABEL,
+  ESTADO_VENTA_LABEL,
+  ESTADO_VENTA_STYLE,
+  FORMA_PAGO_LABEL,
+  FRECUENCIA_LABEL,
+  MEDIO_PAGO_LABEL,
+  PABELLON_LABEL,
+  TIPO_PAGO_LABEL,
+  TIPO_STAND_LABEL,
+  fmtCOP,
+} from "@/components/panel/stands-shared";
 
 export const dynamic = "force-dynamic";
-
-const PABELLON_LABEL: Record<string, string> = {
-  azul: "Azul",
-  amarillo: "Amarillo",
-  blanco: "Blanco",
-  rojo: "Rojo",
-  zona_comidas: "Zona de comidas",
-  burbujas: "Burbujas",
-  gran_salon: "Gran salón",
-  plazoleta: "Plazoleta",
-  hall_verde: "Hall verde",
-  hall: "Hall",
-};
-
-const TIPO_STAND_LABEL: Record<string, string> = {
-  isla: "Isla",
-  tipo_u: "Tipo U",
-  esquinero: "Esquinero",
-  lineal: "Lineal",
-};
 
 const CHECKLIST_LABEL: Record<string, string> = {
   contrato_entregado: "Contrato entregado",
@@ -35,14 +28,10 @@ const CHECKLIST_LABEL: Record<string, string> = {
   imagen_enviada: "Imagen enviada",
   formulario_directorio_lleno: "Formulario de directorio",
   paz_y_salvo: "Paz y salvo",
+  pantallazo_aceptacion: "Pantallazo de aceptación",
+  aprobacion_tesoreria: "Aprobación de tesorería",
+  facturado: "Facturado",
 };
-
-const fmtCOP = (n: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  }).format(n);
 
 export default async function MiStandPage({
   params,
@@ -55,20 +44,32 @@ export default async function MiStandPage({
   const { data: stand } = await admin
     .from("stands")
     .select(
-      `id, codigo, nombre, pabellon, tipo_stand, tamano, ciudad,
-       estado_venta, valor_con_iva, precio_venta, valor_restante,
-       fecha_venta, logo_url,
+      `id, codigo, nombre, pabellon, tipo_stand, tamano, ciudad, logo_url,
+       nombre_fiscal, nombre_persona_encargada, categoria_cliente, id_effi,
+       primera_vez_en_feria,
+       asesor_id, asesores_comerciales(nombre_completo),
+       estado_venta, valor_sin_iva, valor_con_iva, precio_venta, valor_restante,
+       valor_primer_abono, medio_pago_primer_abono, forma_pago_restante,
+       fecha_venta, numero_factura, obsequio_de,
        contrato_entregado, manual_entregado, logo_recibido, marcado_en_mapa,
-       publicado_web, imagen_enviada, formulario_directorio_lleno, paz_y_salvo`,
+       publicado_web, imagen_enviada, formulario_directorio_lleno, paz_y_salvo,
+       pantallazo_aceptacion, aprobacion_tesoreria, facturado`,
     )
     .eq("token_publico", token)
     .single();
 
   if (!stand) notFound();
 
+  const asesorNombre =
+    (
+      stand.asesores_comerciales as unknown as {
+        nombre_completo: string;
+      } | null
+    )?.nombre_completo ?? null;
+
   const { data: pagos } = await admin
     .from("pagos_stand")
-    .select("id, monto, fecha")
+    .select("id, monto, fecha, medio_pago, tipo_pago")
     .eq("stand_id", stand.id)
     .order("fecha", { ascending: false });
 
@@ -83,70 +84,161 @@ export default async function MiStandPage({
         <Logo />
       </Link>
 
-      <header className="mb-8 space-y-2">
-        <p className="text-sm font-medium uppercase tracking-widest text-brand">
-          Tu stand en Feria Effix 2026
-        </p>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Stand {stand.codigo}
-          {stand.nombre ? ` — ${stand.nombre}` : ""}
-        </h1>
-        <p className="text-muted">
-          {stand.pabellon ? PABELLON_LABEL[stand.pabellon] : "Zona sin definir"}
-          {stand.tipo_stand ? ` · ${TIPO_STAND_LABEL[stand.tipo_stand]}` : ""}
-          {stand.tamano ? ` · ${stand.tamano}` : ""}
-        </p>
+      <header className="mb-8 flex items-center gap-4">
+        <StandAvatar logoUrl={stand.logo_url} nombre={stand.nombre} size={72} />
+        <div className="space-y-1">
+          <p className="text-sm font-medium uppercase tracking-widest text-brand">
+            Tu stand en Feria Effix 2026
+          </p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Stand {stand.codigo}
+            {stand.nombre ? ` — ${stand.nombre}` : ""}
+          </h1>
+          <p className="text-muted">
+            {stand.pabellon
+              ? PABELLON_LABEL[stand.pabellon as keyof typeof PABELLON_LABEL]
+              : "Zona sin definir"}
+            {stand.tipo_stand
+              ? ` · ${TIPO_STAND_LABEL[stand.tipo_stand as keyof typeof TIPO_STAND_LABEL]}`
+              : ""}
+            {stand.tamano ? ` · ${stand.tamano}` : ""}
+          </p>
+        </div>
       </header>
 
       <section className="mb-6 rounded-xl border border-border bg-surface p-5">
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
           Logo de tu marca
         </h2>
-        {stand.logo_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={stand.logo_url}
-            alt={`Logo de ${stand.nombre ?? stand.codigo}`}
-            className="mb-4 h-24 w-auto rounded-md border border-border bg-white object-contain p-2"
+        <div className="mb-4 flex items-center gap-4">
+          <StandAvatar
+            logoUrl={stand.logo_url}
+            nombre={stand.nombre}
+            size={64}
           />
-        )}
+          <p className="text-sm text-muted">
+            Así se va a ver tu logo. Subí uno nuevo para reemplazarlo.
+          </p>
+        </div>
         <SubirLogoForm token={token} />
       </section>
 
       <section className="mb-6 grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-border bg-surface p-5">
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
-            Comercial
+            Cliente
           </h2>
+          <Row k="Nombre fiscal" v={stand.nombre_fiscal} />
+          <Row k="Persona encargada" v={stand.nombre_persona_encargada} />
+          <Row k="Ciudad" v={stand.ciudad} />
           <Row
-            k="Precio"
-            v={fmtCOP(stand.precio_venta ?? stand.valor_con_iva ?? 0)}
+            k="Categoría"
+            v={
+              stand.categoria_cliente
+                ? CATEGORIA_LABEL[
+                    stand.categoria_cliente as keyof typeof CATEGORIA_LABEL
+                  ]
+                : null
+            }
           />
-          <Row k="Saldo pendiente" v={fmtCOP(stand.valor_restante ?? 0)} />
-          {stand.fecha_venta && (
-            <Row k="Fecha de venta" v={stand.fecha_venta} />
-          )}
+          <Row k="Asesor comercial" v={asesorNombre} />
+          <Row k="ID Effi" v={stand.id_effi} />
+          <Row
+            k="Frecuencia en la feria"
+            v={
+              stand.primera_vez_en_feria
+                ? FRECUENCIA_LABEL[
+                    stand.primera_vez_en_feria as keyof typeof FRECUENCIA_LABEL
+                  ]
+                : null
+            }
+          />
         </div>
 
         <div className="rounded-xl border border-border bg-surface p-5">
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
-            Checklist de tu stand
-          </h2>
-          <div className="space-y-1.5 text-sm">
-            {checklist.map(([campo, label]) => {
-              const activo = Boolean(
-                (stand as unknown as Record<string, unknown>)[campo],
-              );
-              return (
-                <div key={campo} className="flex items-center justify-between">
-                  <span className="text-muted">{label}</span>
-                  <span className={activo ? "text-ok" : "text-muted"}>
-                    {activo ? "✓ Listo" : "Pendiente"}
-                  </span>
-                </div>
-              );
-            })}
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
+              Comercial
+            </h2>
+            {stand.estado_venta && (
+              <span
+                className={`rounded-full border px-2 py-0.5 text-xs ${ESTADO_VENTA_STYLE[stand.estado_venta as keyof typeof ESTADO_VENTA_STYLE]}`}
+              >
+                {
+                  ESTADO_VENTA_LABEL[
+                    stand.estado_venta as keyof typeof ESTADO_VENTA_LABEL
+                  ]
+                }
+              </span>
+            )}
           </div>
+          <Row
+            k="Valor sin IVA"
+            v={stand.valor_sin_iva != null ? fmtCOP(stand.valor_sin_iva) : null}
+          />
+          <Row
+            k="Valor con IVA"
+            v={stand.valor_con_iva != null ? fmtCOP(stand.valor_con_iva) : null}
+          />
+          <Row
+            k="Precio de venta"
+            v={stand.precio_venta != null ? fmtCOP(stand.precio_venta) : null}
+          />
+          <Row k="Saldo pendiente" v={fmtCOP(stand.valor_restante ?? 0)} />
+          <Row
+            k="Primer abono"
+            v={
+              stand.valor_primer_abono != null
+                ? fmtCOP(stand.valor_primer_abono)
+                : null
+            }
+          />
+          <Row
+            k="Medio del primer abono"
+            v={
+              stand.medio_pago_primer_abono
+                ? MEDIO_PAGO_LABEL[
+                    stand.medio_pago_primer_abono as keyof typeof MEDIO_PAGO_LABEL
+                  ]
+                : null
+            }
+          />
+          <Row
+            k="Forma de pago restante"
+            v={
+              stand.forma_pago_restante
+                ? FORMA_PAGO_LABEL[
+                    stand.forma_pago_restante as keyof typeof FORMA_PAGO_LABEL
+                  ]
+                : null
+            }
+          />
+          <Row k="Fecha de venta" v={stand.fecha_venta} />
+          <Row k="N.º factura" v={stand.numero_factura} />
+          {stand.estado_venta === "obsequio_directivo" && (
+            <Row k="Obsequio de" v={stand.obsequio_de} />
+          )}
+        </div>
+      </section>
+
+      <section className="mb-6 rounded-xl border border-border bg-surface p-5">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
+          Checklist de tu stand
+        </h2>
+        <div className="grid gap-1.5 text-sm sm:grid-cols-2">
+          {checklist.map(([campo, label]) => {
+            const activo = Boolean(
+              (stand as unknown as Record<string, unknown>)[campo],
+            );
+            return (
+              <div key={campo} className="flex items-center justify-between">
+                <span className="text-muted">{label}</span>
+                <span className={activo ? "text-ok" : "text-muted"}>
+                  {activo ? "✓ Listo" : "Pendiente"}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -156,10 +248,32 @@ export default async function MiStandPage({
             Abonos recibidos
           </h2>
           <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-muted">
+                <th className="pb-2 font-medium">Fecha</th>
+                <th className="pb-2 font-medium">Tipo</th>
+                <th className="pb-2 font-medium">Medio de pago</th>
+                <th className="pb-2 text-right font-medium">Monto</th>
+              </tr>
+            </thead>
             <tbody>
               {pagos.map((p) => (
                 <tr key={p.id} className="border-b border-border/40">
                   <td className="py-1.5 text-muted">{p.fecha}</td>
+                  <td className="py-1.5 text-muted">
+                    {p.tipo_pago
+                      ? TIPO_PAGO_LABEL[
+                          p.tipo_pago as keyof typeof TIPO_PAGO_LABEL
+                        ]
+                      : "—"}
+                  </td>
+                  <td className="py-1.5 text-muted">
+                    {p.medio_pago
+                      ? MEDIO_PAGO_LABEL[
+                          p.medio_pago as keyof typeof MEDIO_PAGO_LABEL
+                        ]
+                      : "—"}
+                  </td>
                   <td className="py-1.5 text-right">
                     {fmtCOP(Number(p.monto))}
                   </td>
@@ -171,17 +285,18 @@ export default async function MiStandPage({
       )}
 
       <p className="mt-8 text-center text-xs text-muted">
-        ¿Algo no coincide? Escribile al equipo comercial de Feria Effix.
+        Revisá que toda esta información sea correcta. Si algo no coincide,
+        escribile al equipo comercial de Feria Effix.
       </p>
     </main>
   );
 }
 
-function Row({ k, v }: { k: string; v: string }) {
+function Row({ k, v }: { k: string; v: string | null }) {
   return (
     <div className="flex justify-between border-b border-border/40 py-1.5 text-sm">
       <span className="text-muted">{k}</span>
-      <span className="font-medium">{v}</span>
+      <span className="font-medium">{v ?? "—"}</span>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   type ChecklistCampoStand,
   type DatosComercialesStandInput,
 } from "@/app/panel/stands/actions";
+import { StandAvatar } from "@/components/StandAvatar";
 import {
   Campo,
   PrecioStandEditor,
@@ -87,17 +88,24 @@ export function StandDetalle({
         className="my-8 w-full max-w-3xl space-y-6 rounded-xl border border-border bg-surface p-6"
       >
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold">
-              Stand {stand.codigo}{" "}
-              <span className="text-muted">— {stand.nombre ?? "—"}</span>
-            </h2>
-            <p className="text-sm text-muted">
-              {stand.pabellon ? PABELLON_LABEL[stand.pabellon] : "Sin zona"} ·{" "}
-              {stand.tipo_stand
-                ? TIPO_STAND_LABEL[stand.tipo_stand]
-                : "Tipo sin definir"}
-            </p>
+          <div className="flex items-center gap-3">
+            <StandAvatar
+              logoUrl={stand.logo_url}
+              nombre={stand.nombre}
+              size={48}
+            />
+            <div>
+              <h2 className="text-lg font-semibold">
+                Stand {stand.codigo}{" "}
+                <span className="text-muted">— {stand.nombre ?? "—"}</span>
+              </h2>
+              <p className="text-sm text-muted">
+                {stand.pabellon ? PABELLON_LABEL[stand.pabellon] : "Sin zona"} ·{" "}
+                {stand.tipo_stand
+                  ? TIPO_STAND_LABEL[stand.tipo_stand]
+                  : "Tipo sin definir"}
+              </p>
+            </div>
           </div>
           <div className="flex shrink-0 gap-2">
             {puedeEditarComercial && !editando && (
@@ -834,14 +842,7 @@ function LinkPublicoStand({ stand }: { stand: StandView }) {
 
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface-2 px-4 py-2 text-sm">
-      {stand.logo_url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={stand.logo_url}
-          alt="Logo del cliente"
-          className="h-8 w-8 rounded border border-border bg-white object-contain"
-        />
-      )}
+      <StandAvatar logoUrl={stand.logo_url} nombre={stand.nombre} size={32} />
       <span className="text-muted">
         Link para el cliente (solo lectura + carga de logo):
       </span>
