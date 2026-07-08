@@ -111,7 +111,10 @@ export interface StandView {
   directorio_email: string | null;
   directorio_sitio_web: string | null;
   directorio_descripcion: string | null;
-  directorio_redes_sociales: string | null;
+  directorio_instagram: string | null;
+  directorio_facebook: string | null;
+  directorio_tiktok: string | null;
+  directorio_linkedin: string | null;
 }
 
 export interface PatrocinioOption {

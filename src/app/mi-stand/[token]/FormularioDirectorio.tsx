@@ -72,16 +72,42 @@ export function FormularioDirectorio({
         <Campo label="Sitio web">
           <input {...campo("sitioWeb")} className={inputClass} />
         </Campo>
-        <Campo label="Redes sociales">
+        <Campo label="Instagram">
           <input
-            {...campo("redesSociales")}
-            placeholder="Instagram, Facebook, TikTok…"
+            {...campo("instagram")}
+            placeholder="@tumarca o link completo"
+            className={inputClass}
+          />
+        </Campo>
+        <Campo label="Facebook">
+          <input
+            {...campo("facebook")}
+            placeholder="@tumarca o link completo"
+            className={inputClass}
+          />
+        </Campo>
+        <Campo label="TikTok">
+          <input
+            {...campo("tiktok")}
+            placeholder="@tumarca o link completo"
+            className={inputClass}
+          />
+        </Campo>
+        <Campo label="LinkedIn">
+          <input
+            {...campo("linkedin")}
+            placeholder="Link de tu página o perfil"
             className={inputClass}
           />
         </Campo>
       </div>
-      <Campo label="Descripción breve de la marca">
-        <textarea {...campo("descripcion")} rows={3} className={inputClass} />
+      <Campo label="Descripción de tu marca">
+        <textarea
+          {...campo("descripcion")}
+          rows={3}
+          placeholder="Describite como querés que las personas te conozcan"
+          className={inputClass}
+        />
       </Campo>
 
       {error && <p className="text-sm text-danger">{error}</p>}

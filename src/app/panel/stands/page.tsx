@@ -44,7 +44,8 @@ export default async function PanelStandsPage() {
            token_publico, logo_url,
            directorio_pais, directorio_direccion, directorio_telefono,
            directorio_email, directorio_sitio_web, directorio_descripcion,
-           directorio_redes_sociales`,
+           directorio_instagram, directorio_facebook, directorio_tiktok,
+           directorio_linkedin`,
         )
         .order("codigo"),
       supabase.from("patrocinios").select("id, empresa").order("empresa"),

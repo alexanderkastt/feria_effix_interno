@@ -57,7 +57,8 @@ export default async function MiStandPage({
        pantallazo_aceptacion, aprobacion_tesoreria, facturado,
        directorio_pais, directorio_direccion, directorio_telefono,
        directorio_email, directorio_sitio_web, directorio_descripcion,
-       directorio_redes_sociales`,
+       directorio_instagram, directorio_facebook, directorio_tiktok,
+       directorio_linkedin`,
     )
     .eq("token_publico", token)
     .single();
@@ -246,7 +247,10 @@ export default async function MiStandPage({
             email: stand.directorio_email ?? "",
             sitioWeb: stand.directorio_sitio_web ?? "",
             descripcion: stand.directorio_descripcion ?? "",
-            redesSociales: stand.directorio_redes_sociales ?? "",
+            instagram: stand.directorio_instagram ?? "",
+            facebook: stand.directorio_facebook ?? "",
+            tiktok: stand.directorio_tiktok ?? "",
+            linkedin: stand.directorio_linkedin ?? "",
           }}
         />
       </section>

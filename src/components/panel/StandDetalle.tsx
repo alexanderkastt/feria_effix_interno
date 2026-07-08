@@ -234,10 +234,10 @@ export function StandDetalle({
               <Dato label="Teléfono" valor={stand.directorio_telefono} />
               <Dato label="Email" valor={stand.directorio_email} />
               <Dato label="Sitio web" valor={stand.directorio_sitio_web} />
-              <Dato
-                label="Redes sociales"
-                valor={stand.directorio_redes_sociales}
-              />
+              <Dato label="Instagram" valor={stand.directorio_instagram} />
+              <Dato label="Facebook" valor={stand.directorio_facebook} />
+              <Dato label="TikTok" valor={stand.directorio_tiktok} />
+              <Dato label="LinkedIn" valor={stand.directorio_linkedin} />
               <Dato
                 label="Descripción"
                 valor={stand.directorio_descripcion}
@@ -594,8 +594,17 @@ function EditarDatosComercialesForm({
   const [directorioDescripcion, setDirectorioDescripcion] = useState(
     stand.directorio_descripcion ?? "",
   );
-  const [directorioRedesSociales, setDirectorioRedesSociales] = useState(
-    stand.directorio_redes_sociales ?? "",
+  const [directorioInstagram, setDirectorioInstagram] = useState(
+    stand.directorio_instagram ?? "",
+  );
+  const [directorioFacebook, setDirectorioFacebook] = useState(
+    stand.directorio_facebook ?? "",
+  );
+  const [directorioTiktok, setDirectorioTiktok] = useState(
+    stand.directorio_tiktok ?? "",
+  );
+  const [directorioLinkedin, setDirectorioLinkedin] = useState(
+    stand.directorio_linkedin ?? "",
   );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -636,7 +645,10 @@ function EditarDatosComercialesForm({
       directorio_email: directorioEmail.trim() || null,
       directorio_sitio_web: directorioSitioWeb.trim() || null,
       directorio_descripcion: directorioDescripcion.trim() || null,
-      directorio_redes_sociales: directorioRedesSociales.trim() || null,
+      directorio_instagram: directorioInstagram.trim() || null,
+      directorio_facebook: directorioFacebook.trim() || null,
+      directorio_tiktok: directorioTiktok.trim() || null,
+      directorio_linkedin: directorioLinkedin.trim() || null,
     };
     startTransition(async () => {
       const r = await actualizarStandComercial(stand.id, input);
@@ -899,15 +911,36 @@ function EditarDatosComercialesForm({
               className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </Campo>
-          <Campo label="Redes sociales">
+          <Campo label="Instagram">
             <input
-              value={directorioRedesSociales}
-              onChange={(e) => setDirectorioRedesSociales(e.target.value)}
+              value={directorioInstagram}
+              onChange={(e) => setDirectorioInstagram(e.target.value)}
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </Campo>
+          <Campo label="Facebook">
+            <input
+              value={directorioFacebook}
+              onChange={(e) => setDirectorioFacebook(e.target.value)}
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </Campo>
+          <Campo label="TikTok">
+            <input
+              value={directorioTiktok}
+              onChange={(e) => setDirectorioTiktok(e.target.value)}
+              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
+            />
+          </Campo>
+          <Campo label="LinkedIn">
+            <input
+              value={directorioLinkedin}
+              onChange={(e) => setDirectorioLinkedin(e.target.value)}
               className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand"
             />
           </Campo>
         </div>
-        <Campo label="Descripción de la marca">
+        <Campo label="Descripción de la marca (describila como querés que la conozcan)">
           <textarea
             value={directorioDescripcion}
             onChange={(e) => setDirectorioDescripcion(e.target.value)}

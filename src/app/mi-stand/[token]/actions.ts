@@ -90,7 +90,10 @@ export interface FormularioDirectorioInput {
   email: string;
   sitioWeb: string;
   descripcion: string;
-  redesSociales: string;
+  instagram: string;
+  facebook: string;
+  tiktok: string;
+  linkedin: string;
 }
 
 // Guarda los datos de contacto para el futuro Directorio de Marcas. Requiere
@@ -136,7 +139,10 @@ export async function guardarFormularioDirectorio(
       directorio_email: email,
       directorio_sitio_web: input.sitioWeb.trim() || null,
       directorio_descripcion: input.descripcion.trim() || null,
-      directorio_redes_sociales: input.redesSociales.trim() || null,
+      directorio_instagram: input.instagram.trim() || null,
+      directorio_facebook: input.facebook.trim() || null,
+      directorio_tiktok: input.tiktok.trim() || null,
+      directorio_linkedin: input.linkedin.trim() || null,
       formulario_directorio_lleno: true,
     })
     .eq("id", stand.id);
