@@ -18,7 +18,7 @@ async function permiso(): Promise<boolean> {
   const sesion = await getSesion();
   return !!(
     sesion &&
-    (sesion.esAdmin ||
+    (sesion.esRoot ||
       sesion.areas.some((a) => a.slug === "marketing" && a.nivel !== "lectura"))
   );
 }

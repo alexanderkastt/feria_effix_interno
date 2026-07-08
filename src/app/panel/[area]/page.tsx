@@ -23,7 +23,7 @@ export default async function AreaPage({
   if (!sesion) notFound(); // el layout ya redirige, defensa extra
 
   const acceso = sesion.areas.find((a) => a.slug === meta.slug);
-  if (!sesion.esAdmin && !acceso) notFound();
+  if (!sesion.esRoot && !acceso) notFound();
   const puedeEditar =
     sesion.esAdmin || (acceso ? acceso.nivel !== "lectura" : false);
 

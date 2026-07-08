@@ -45,7 +45,7 @@ export interface AccionResult {
 async function puedeGestionar(): Promise<boolean> {
   const sesion = await getSesion();
   if (!sesion) return false;
-  if (sesion.esAdmin) return true;
+  if (sesion.esRoot) return true;
   const a = sesion.areas.find((x) => x.slug === "ponentes");
   return !!a && a.nivel !== "lectura";
 }

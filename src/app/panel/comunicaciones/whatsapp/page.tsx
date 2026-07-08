@@ -15,7 +15,7 @@ export default async function WhatsappPage() {
   const sesion = await getSesion();
   const ok =
     sesion &&
-    (sesion.esAdmin || sesion.areas.some((a) => a.slug === "marketing"));
+    (sesion.esRoot || sesion.areas.some((a) => a.slug === "marketing"));
   if (!ok || !sesion) notFound();
   const puedeEditar =
     sesion.esAdmin ||

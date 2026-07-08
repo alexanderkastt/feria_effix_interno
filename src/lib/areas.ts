@@ -21,21 +21,35 @@ export interface AreaMeta {
   label: string;
   /** Superficie pública asociada, si existe. */
   publica?: string;
+  /**
+   * Si el módulo ya está listo para el resto del equipo (no solo para el
+   * usuario root). Un módulo con `listo: false` solo lo ve/usa el root
+   * (jacsolucionesgraficas@gmail.com, ver EMAIL_ROOT en `@/lib/auth`),
+   * sin importar el rol o los permisos de área que tenga cualquier otro
+   * usuario. Se va pasando a `true` a medida que cada módulo queda
+   * terminado y probado.
+   */
+  listo: boolean;
 }
 
 export const AREAS: AreaMeta[] = [
-  { slug: "ponentes", label: "Ponentes", publica: "/postular-ponente" },
-  { slug: "stands", label: "Stands", publica: "/mapa-stands" },
-  { slug: "patrocinios", label: "Patrocinios" },
-  { slug: "logistica", label: "Logística" },
-  { slug: "diseno", label: "Diseño" },
-  { slug: "video", label: "Video" },
-  { slug: "produccion", label: "Producción" },
-  { slug: "finanzas", label: "Finanzas" },
-  { slug: "estrategia", label: "Estrategia" },
-  { slug: "marketing", label: "Marketing" },
-  { slug: "alianzas", label: "Alianzas estratégicas" },
-  { slug: "comunidades", label: "Comunidades" },
+  {
+    slug: "ponentes",
+    label: "Ponentes",
+    publica: "/postular-ponente",
+    listo: false,
+  },
+  { slug: "stands", label: "Stands", publica: "/mapa-stands", listo: true },
+  { slug: "patrocinios", label: "Patrocinios", listo: false },
+  { slug: "logistica", label: "Logística", listo: false },
+  { slug: "diseno", label: "Diseño", listo: false },
+  { slug: "video", label: "Video", listo: false },
+  { slug: "produccion", label: "Producción", listo: false },
+  { slug: "finanzas", label: "Finanzas", listo: false },
+  { slug: "estrategia", label: "Estrategia", listo: false },
+  { slug: "marketing", label: "Marketing", listo: false },
+  { slug: "alianzas", label: "Alianzas estratégicas", listo: false },
+  { slug: "comunidades", label: "Comunidades", listo: false },
 ];
 
 export const AREA_LABEL: Record<AreaSlug, string> = Object.fromEntries(

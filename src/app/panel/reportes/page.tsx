@@ -60,7 +60,7 @@ export default async function ReportesPage() {
 
   const areasReporte = [...porArea.entries()]
     .filter(
-      ([slug]) => sesion.esAdmin || sesion.areas.some((a) => a.slug === slug),
+      ([slug]) => sesion.esRoot || sesion.areas.some((a) => a.slug === slug),
     )
     .map(([slug, r]) => ({
       slug,

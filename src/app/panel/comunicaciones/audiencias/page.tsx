@@ -20,7 +20,7 @@ export default async function AudienciasPage() {
   const sesion = await getSesion();
   if (!sesion) notFound();
   const puedeVer =
-    sesion.esAdmin || sesion.areas.some((a) => a.slug === "marketing");
+    sesion.esRoot || sesion.areas.some((a) => a.slug === "marketing");
   if (!puedeVer) notFound();
   const puedeEditar =
     sesion.esAdmin ||

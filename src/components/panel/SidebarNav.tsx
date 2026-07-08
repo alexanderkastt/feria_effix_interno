@@ -9,13 +9,17 @@ export function SidebarNav({
   areas,
   mostrarDashboard,
   esAdmin,
+  esRoot,
 }: {
   areas: AreaMeta[];
   mostrarDashboard: boolean;
   esAdmin: boolean;
+  esRoot: boolean;
 }) {
   const pathname = usePathname();
-  const tieneMarketing = esAdmin || areas.some((a) => a.slug === "marketing");
+  // Comunicaciones vive bajo el módulo "marketing" — mismo gate de
+  // listo/root que el resto de los módulos, no el esAdmin genérico.
+  const tieneMarketing = esRoot || areas.some((a) => a.slug === "marketing");
 
   const item = (href: string, label: string) => {
     const activo = pathname === href;

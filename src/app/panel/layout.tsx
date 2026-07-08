@@ -27,6 +27,7 @@ export default async function PanelLayout({
           areas={sesion.areas}
           mostrarDashboard={sesion.esAdmin}
           esAdmin={sesion.esAdmin}
+          esRoot={sesion.esRoot}
         />
         <div className="mt-auto rounded-lg border border-border bg-surface-2 p-3 text-xs text-muted">
           Base local (Docker) · {sesion.areas.length} áreas visibles

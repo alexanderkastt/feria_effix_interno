@@ -13,7 +13,7 @@ export default async function HistoricoPage() {
   if (!sesion) notFound();
 
   const acceso = sesion.areas.find((a) => a.slug === "marketing");
-  if (!sesion.esAdmin && !acceso) notFound();
+  if (!sesion.esRoot && !acceso) notFound();
 
   const supabase = await createClient();
   const { data } = await supabase

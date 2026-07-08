@@ -72,7 +72,7 @@ async function construirFilas(
 
   // reporte por área
   const slug = (areaSlug ?? "") as AreaSlug;
-  const puede = sesion.esAdmin || sesion.areas.some((a) => a.slug === slug);
+  const puede = sesion.esRoot || sesion.areas.some((a) => a.slug === slug);
   if (!puede || !AREA_LABEL[slug]) return null;
 
   const { data: areaRow } = await supabase

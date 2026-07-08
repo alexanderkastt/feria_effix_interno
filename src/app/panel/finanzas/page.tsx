@@ -17,7 +17,7 @@ export default async function PanelFinanzasPage() {
   if (!sesion) notFound();
 
   const acceso = sesion.areas.find((a) => a.slug === "finanzas");
-  if (!sesion.esAdmin && !acceso) notFound();
+  if (!sesion.esRoot && !acceso) notFound();
   const puedeEditar =
     sesion.esAdmin || (acceso ? acceso.nivel !== "lectura" : false);
 

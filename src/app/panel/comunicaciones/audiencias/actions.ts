@@ -19,7 +19,7 @@ async function puedeEditarMarketing(): Promise<boolean> {
   const sesion = await getSesion();
   if (!sesion) return false;
   return (
-    sesion.esAdmin ||
+    sesion.esRoot ||
     sesion.areas.some((a) => a.slug === "marketing" && a.nivel !== "lectura")
   );
 }

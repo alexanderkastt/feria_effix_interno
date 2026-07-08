@@ -37,7 +37,7 @@ export async function crearOkr(input: {
       };
   } else {
     const a = sesion.areas.find((x) => x.slug === input.areaSlug);
-    if (!sesion.esAdmin && (!a || a.nivel === "lectura"))
+    if (!sesion.esRoot && (!a || a.nivel === "lectura"))
       return { ok: false, mensaje: "No tenés permiso en esa área." };
   }
 

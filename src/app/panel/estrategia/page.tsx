@@ -12,7 +12,7 @@ export default async function EstrategiaPage() {
   const sesion = await getSesion();
   if (!sesion) notFound();
   const acceso = sesion.areas.find((a) => a.slug === "estrategia");
-  if (!sesion.esAdmin && !acceso) notFound();
+  if (!sesion.esRoot && !acceso) notFound();
   const puedeEditar =
     sesion.esAdmin || (acceso ? acceso.nivel !== "lectura" : false);
 

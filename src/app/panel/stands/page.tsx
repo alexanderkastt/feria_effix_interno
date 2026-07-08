@@ -17,7 +17,7 @@ export default async function PanelStandsPage() {
   if (!sesion) notFound();
 
   const acceso = sesion.areas.find((a) => a.slug === "stands");
-  if (!sesion.esAdmin && !acceso) notFound();
+  if (!sesion.esRoot && !acceso) notFound();
   const puedeEditar =
     sesion.esAdmin || (acceso ? acceso.nivel !== "lectura" : false);
   // Datos comerciales (cliente, precios, pagos, fusiones): solo nivel 'admin'

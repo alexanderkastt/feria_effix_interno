@@ -21,8 +21,19 @@ export interface AreaAccesible extends AreaMeta {
 export interface Sesion {
   perfil: Perfil;
   esAdmin: boolean;
+  /**
+   * Único usuario con acceso total a la plataforma, incluidos los módulos
+   * que todavía no están listos para el resto del equipo (`listo: false`
+   * en `@/lib/areas`). Se identifica por email, no por `rol_base`: "root"
+   * es sobre el desarrollador de la plataforma, no sobre un rol de negocio
+   * como 'directivo'. Los demás usuarios (sean o no directivo/administrativo)
+   * solo ven los módulos ya marcados `listo: true`.
+   */
+  esRoot: boolean;
   areas: AreaAccesible[];
 }
+
+const EMAIL_ROOT = "jacsolucionesgraficas@gmail.com";
 
 // Devuelve el perfil del usuario logueado y las áreas a las que tiene acceso.
 // Retorna null si no hay sesión. Respeta RLS (usa el cliente con la sesión).
@@ -41,12 +52,19 @@ export async function getSesion(): Promise<Sesion | null> {
 
   if (!perfil) return null;
 
+  const esRoot = perfil.email === EMAIL_ROOT;
   const esAdmin =
     perfil.rol_base === "directivo" || perfil.rol_base === "administrativo";
 
   let areas: AreaAccesible[];
-  if (esAdmin) {
+  if (esRoot) {
+    // Ve todos los módulos, estén "listos" o no — necesita poder probarlos.
     areas = AREAS.map((a) => ({ ...a, nivel: "admin" as const }));
+  } else if (esAdmin) {
+    areas = AREAS.filter((a) => a.listo).map((a) => ({
+      ...a,
+      nivel: "admin" as const,
+    }));
   } else {
     const { data: filas } = await supabase
       .from("usuario_areas")
@@ -57,11 +75,11 @@ export async function getSesion(): Promise<Sesion | null> {
         ?.nombre;
       if (nombre) porSlug.set(nombre, f.nivel_acceso as AreaAccesible["nivel"]);
     }
-    areas = AREAS.filter((a) => porSlug.has(a.slug)).map((a) => ({
+    areas = AREAS.filter((a) => a.listo && porSlug.has(a.slug)).map((a) => ({
       ...a,
       nivel: porSlug.get(a.slug)!,
     }));
   }
 
-  return { perfil, esAdmin, areas };
+  return { perfil, esAdmin, esRoot, areas };
 }

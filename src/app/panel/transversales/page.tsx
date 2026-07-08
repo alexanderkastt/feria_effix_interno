@@ -26,7 +26,7 @@ export default async function TransversalesPage() {
     sesion.areas.filter((a) => a.nivel !== "lectura").map((a) => a.slug),
   );
   const areaOpciones: AreaOpcion[] = (areasDb ?? [])
-    .filter((a) => sesion.esAdmin || editableSlugs.has(a.nombre))
+    .filter((a) => sesion.esRoot || editableSlugs.has(a.nombre))
     .map((a) => ({ id: a.id, label: AREA_LABEL[a.nombre as AreaSlug] }));
 
   const { data: filas } = await supabase

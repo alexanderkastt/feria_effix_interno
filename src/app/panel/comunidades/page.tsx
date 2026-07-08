@@ -9,7 +9,7 @@ export default async function ComunidadesPage() {
   const sesion = await getSesion();
   if (!sesion) notFound();
   const acceso = sesion.areas.find((a) => a.slug === "comunidades");
-  if (!sesion.esAdmin && !acceso) notFound();
+  if (!sesion.esRoot && !acceso) notFound();
   const puedeEditar =
     sesion.esAdmin || (acceso ? acceso.nivel !== "lectura" : false);
 

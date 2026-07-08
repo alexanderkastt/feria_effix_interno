@@ -18,7 +18,7 @@ async function puedeMarketing(): Promise<boolean> {
   const s = await getSesion();
   if (!s) return false;
   return (
-    s.esAdmin ||
+    s.esRoot ||
     s.areas.some((a) => a.slug === "marketing" && a.nivel !== "lectura")
   );
 }
