@@ -25,7 +25,6 @@ import {
   ESTADO_VENTA_STYLE,
   FORMA_PAGO_LABEL,
   FRECUENCIA_LABEL,
-  IVA_STANDS,
   PABELLON_LABEL,
   TIPO_STAND_LABEL,
   fmtCOP,
@@ -1108,25 +1107,22 @@ function StandsKpis({
   pagos: PagoStandView[];
 }) {
   // Todo este bloque se muestra sin IVA. `valor_sin_iva` es el valor base
-  // (columna F del Excel original) y ya viene sin IVA. `precio_venta`,
-  // `pagos_stand.monto` y `valor_restante` sí incluyen IVA (son montos reales
-  // cobrados/por cobrar), así que se les quita dividiendo por (1 + IVA_STANDS)
-  // para que el porcentaje compare cifras homogéneas.
+  // (columna F del Excel original). `precio_venta` es la columna "precio
+  // final de venta" del Excel, que también viene sin IVA, así que
+  // `valor_restante` (precio_venta - abonos) y los abonos ya están en esa
+  // misma base — no hay que restarles nada más.
   const totalPotencial = stands.reduce((s, x) => s + (x.valor_sin_iva ?? 0), 0);
-  const totalVendido = stands.reduce(
-    (s, x) => s + (x.precio_venta ?? 0) / (1 + IVA_STANDS),
-    0,
-  );
+  const totalVendido = stands.reduce((s, x) => s + (x.precio_venta ?? 0), 0);
   const pctVendido =
     totalPotencial > 0
       ? Math.min(100, Math.round((totalVendido / totalPotencial) * 100))
       : 0;
 
-  const totalAbonos =
-    pagos.reduce((s, p) => s + Number(p.monto), 0) / (1 + IVA_STANDS);
-  const totalPendiente =
-    stands.reduce((s, x) => s + Number(x.valor_restante ?? 0), 0) /
-    (1 + IVA_STANDS);
+  const totalAbonos = pagos.reduce((s, p) => s + Number(p.monto), 0);
+  const totalPendiente = stands.reduce(
+    (s, x) => s + Number(x.valor_restante ?? 0),
+    0,
+  );
   const totalComprometido = totalAbonos + totalPendiente;
   const pctCobrado =
     totalComprometido > 0
