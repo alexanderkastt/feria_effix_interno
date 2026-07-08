@@ -25,6 +25,7 @@ import {
   ESTADO_VENTA_STYLE,
   FORMA_PAGO_LABEL,
   FRECUENCIA_LABEL,
+  IVA_STANDS,
   PABELLON_LABEL,
   TIPO_STAND_LABEL,
   fmtCOP,
@@ -350,7 +351,7 @@ export function StandsAdmin({
                   <th className="p-3 font-medium">Nombre comercial</th>
                   <th className="p-3 font-medium">Pabellón</th>
                   <th className="p-3 font-medium">Tamaño</th>
-                  <th className="p-3 font-medium">Precio</th>
+                  <th className="p-3 font-medium">Precio (sin IVA)</th>
                   <th className="p-3 font-medium">Estado</th>
                   <th className="p-3 font-medium">Estado venta</th>
                   <th className="p-3 font-medium">Acciones</th>
@@ -404,7 +405,7 @@ export function StandsAdmin({
                         {s.pabellon ? PABELLON_LABEL[s.pabellon] : "—"}
                       </td>
                       <td className="p-3 text-muted">{s.tamano ?? "—"}</td>
-                      <td className="p-3">{fmtCOP(s.precio)}</td>
+                      <td className="p-3">{fmtCOP(s.valor_sin_iva ?? 0)}</td>
                       <td className="p-3">
                         {puedeEditar ? (
                           <select
@@ -1106,18 +1107,26 @@ function StandsKpis({
   stands: StandView[];
   pagos: PagoStandView[];
 }) {
-  const totalPotencial = stands.reduce((s, x) => s + (x.valor_con_iva ?? 0), 0);
-  const totalVendido = stands.reduce((s, x) => s + (x.precio_venta ?? 0), 0);
+  // Todo este bloque se muestra sin IVA. `valor_sin_iva` es el valor base
+  // (columna F del Excel original) y ya viene sin IVA. `precio_venta`,
+  // `pagos_stand.monto` y `valor_restante` sí incluyen IVA (son montos reales
+  // cobrados/por cobrar), así que se les quita dividiendo por (1 + IVA_STANDS)
+  // para que el porcentaje compare cifras homogéneas.
+  const totalPotencial = stands.reduce((s, x) => s + (x.valor_sin_iva ?? 0), 0);
+  const totalVendido = stands.reduce(
+    (s, x) => s + (x.precio_venta ?? 0) / (1 + IVA_STANDS),
+    0,
+  );
   const pctVendido =
     totalPotencial > 0
       ? Math.min(100, Math.round((totalVendido / totalPotencial) * 100))
       : 0;
 
-  const totalAbonos = pagos.reduce((s, p) => s + Number(p.monto), 0);
-  const totalPendiente = stands.reduce(
-    (s, x) => s + Number(x.valor_restante ?? 0),
-    0,
-  );
+  const totalAbonos =
+    pagos.reduce((s, p) => s + Number(p.monto), 0) / (1 + IVA_STANDS);
+  const totalPendiente =
+    stands.reduce((s, x) => s + Number(x.valor_restante ?? 0), 0) /
+    (1 + IVA_STANDS);
   const totalComprometido = totalAbonos + totalPendiente;
   const pctCobrado =
     totalComprometido > 0
@@ -1142,7 +1151,7 @@ function StandsKpis({
       <section className="rounded-xl border border-border bg-surface p-5">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-muted">
-            Valor vendido vs. potencial total
+            Valor vendido vs. potencial total (sin IVA)
           </h2>
           <span className="text-sm font-semibold text-brand">
             {pctVendido}%
@@ -1163,7 +1172,7 @@ function StandsKpis({
       <section className="rounded-xl border border-border bg-surface p-5">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-muted">
-            Abonos recibidos vs. saldo pendiente
+            Abonos recibidos vs. saldo pendiente (sin IVA)
           </h2>
           <span className="text-sm font-semibold text-brand">
             {pctCobrado}%
