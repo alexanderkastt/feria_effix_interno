@@ -470,7 +470,11 @@ export function StandsAdmin({
           </div>
         </>
       ) : (
-        <StandsDevoluciones devoluciones={devoluciones} />
+        <StandsDevoluciones
+          devoluciones={devoluciones}
+          stands={stands}
+          onVerStand={setSeleccionado}
+        />
       )}
 
       {seleccionado && (

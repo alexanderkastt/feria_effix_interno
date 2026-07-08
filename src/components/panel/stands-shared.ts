@@ -413,7 +413,7 @@ export function formatearValorHistorial(
   return valor;
 }
 
-const ESTADO_STANDS_LABEL: Record<string, string> = {
+export const ESTADO_STANDS_LABEL: Record<string, string> = {
   disponible: "Disponible",
   bloqueado_temporal: "Bloqueado",
   reservado: "Reservado",

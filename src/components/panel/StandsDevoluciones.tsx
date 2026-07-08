@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { StandAvatar } from "@/components/StandAvatar";
 import {
+  ESTADO_STANDS_LABEL,
+  ESTADO_VENTA_LABEL,
+  ESTADO_VENTA_STYLE,
   PABELLON_LABEL,
   fmtCOP,
   type Pabellon,
+  type StandView,
 } from "@/components/panel/stands-shared";
 
 export type EstadoDevolucion =
@@ -49,10 +54,20 @@ const FILTROS: (EstadoDevolucion | "todos")[] = [
 
 export function StandsDevoluciones({
   devoluciones,
+  stands,
+  onVerStand,
 }: {
   devoluciones: DevolucionView[];
+  stands: StandView[];
+  onVerStand: (stand: StandView) => void;
 }) {
   const [filtro, setFiltro] = useState<EstadoDevolucion | "todos">("todos");
+
+  const standsPorId = useMemo(() => {
+    const mapa = new Map<string, StandView>();
+    for (const s of stands) mapa.set(s.id, s);
+    return mapa;
+  }, [stands]);
 
   const visibles = devoluciones.filter(
     (d) => filtro === "todos" || d.estado_devolucion === filtro,
@@ -94,56 +109,116 @@ export function StandsDevoluciones({
           <thead>
             <tr className="border-b border-border text-left text-muted">
               <th className="p-3 font-medium">Código</th>
+              <th className="p-3 font-medium">Nombre comercial</th>
+              <th className="p-3 font-medium">Cliente</th>
+              <th className="p-3 font-medium">Ciudad</th>
               <th className="p-3 font-medium">Pabellón</th>
-              <th className="p-3 font-medium">Valor pagado</th>
+              <th className="p-3 font-medium">Tamaño</th>
+              <th className="p-3 font-medium">Precio</th>
               <th className="p-3 font-medium">Estado</th>
+              <th className="p-3 font-medium">Estado venta</th>
+              <th className="p-3 font-medium">Asesor</th>
+              <th className="p-3 font-medium">Valor pagado</th>
+              <th className="p-3 font-medium">Estado devolución</th>
               <th className="p-3 font-medium">Motivo</th>
               <th className="p-3 font-medium">Fecha</th>
               <th className="p-3 font-medium">Observaciones</th>
+              <th className="p-3 font-medium">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {visibles.length === 0 && (
               <tr>
-                <td colSpan={7} className="p-6 text-center text-muted">
+                <td colSpan={16} className="p-6 text-center text-muted">
                   Sin devoluciones para este filtro.
                 </td>
               </tr>
             )}
-            {visibles.map((d) => (
-              <tr
-                key={d.id}
-                className={`border-b border-border/60 ${
-                  d.estado_devolucion === "saldo_a_favor"
-                    ? "bg-brand-soft/10"
-                    : ""
-                }`}
-              >
-                <td className="p-3 font-medium">{d.codigo ?? "—"}</td>
-                <td className="p-3 text-muted">
-                  {d.pabellon ? PABELLON_LABEL[d.pabellon] : "—"}
-                </td>
-                <td className="p-3">
-                  {d.valor_pagado_hasta_devolucion != null
-                    ? fmtCOP(d.valor_pagado_hasta_devolucion)
-                    : "—"}
-                </td>
-                <td className="p-3">
-                  {d.estado_devolucion ? (
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-xs ${ESTADO_DEVOLUCION_STYLE[d.estado_devolucion]}`}
-                    >
-                      {ESTADO_DEVOLUCION_LABEL[d.estado_devolucion]}
-                    </span>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="p-3 text-muted">{d.motivo ?? "—"}</td>
-                <td className="p-3 text-muted">{d.fecha_devolucion ?? "—"}</td>
-                <td className="p-3 text-muted">{d.observaciones ?? "—"}</td>
-              </tr>
-            ))}
+            {visibles.map((d) => {
+              const stand = d.stand_id ? standsPorId.get(d.stand_id) : null;
+              const pabellon = stand?.pabellon ?? d.pabellon;
+              return (
+                <tr
+                  key={d.id}
+                  className={`border-b border-border/60 ${
+                    d.estado_devolucion === "saldo_a_favor"
+                      ? "bg-brand-soft/10"
+                      : ""
+                  }`}
+                >
+                  <td className="p-3 font-medium">
+                    <div className="flex items-center gap-2">
+                      {stand && (
+                        <StandAvatar
+                          logoUrl={stand.logo_url}
+                          nombre={stand.nombre}
+                          size={26}
+                        />
+                      )}
+                      {d.codigo ?? stand?.codigo ?? "—"}
+                    </div>
+                  </td>
+                  <td className="p-3 text-muted">{stand?.nombre ?? "—"}</td>
+                  <td className="p-3 text-muted">
+                    {stand?.cliente_nombre ?? "—"}
+                  </td>
+                  <td className="p-3 text-muted">{stand?.ciudad ?? "—"}</td>
+                  <td className="p-3 text-muted">
+                    {pabellon ? PABELLON_LABEL[pabellon] : "—"}
+                  </td>
+                  <td className="p-3 text-muted">{stand?.tamano ?? "—"}</td>
+                  <td className="p-3">{stand ? fmtCOP(stand.precio) : "—"}</td>
+                  <td className="p-3 text-muted">
+                    {stand ? ESTADO_STANDS_LABEL[stand.estado] : "—"}
+                  </td>
+                  <td className="p-3">
+                    {stand?.estado_venta ? (
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-xs ${ESTADO_VENTA_STYLE[stand.estado_venta]}`}
+                      >
+                        {ESTADO_VENTA_LABEL[stand.estado_venta]}
+                      </span>
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
+                  <td className="p-3 text-muted">
+                    {stand?.asesor_nombre ?? "—"}
+                  </td>
+                  <td className="p-3">
+                    {d.valor_pagado_hasta_devolucion != null
+                      ? fmtCOP(d.valor_pagado_hasta_devolucion)
+                      : "—"}
+                  </td>
+                  <td className="p-3">
+                    {d.estado_devolucion ? (
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-xs ${ESTADO_DEVOLUCION_STYLE[d.estado_devolucion]}`}
+                      >
+                        {ESTADO_DEVOLUCION_LABEL[d.estado_devolucion]}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className="p-3 text-muted">{d.motivo ?? "—"}</td>
+                  <td className="p-3 text-muted">
+                    {d.fecha_devolucion ?? "—"}
+                  </td>
+                  <td className="p-3 text-muted">{d.observaciones ?? "—"}</td>
+                  <td className="p-3">
+                    {stand && (
+                      <button
+                        onClick={() => onVerStand(stand)}
+                        className="rounded-md border border-border px-2 py-1 text-xs text-brand hover:border-brand"
+                      >
+                        Ver detalle
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
