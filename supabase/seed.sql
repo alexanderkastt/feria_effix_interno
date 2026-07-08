@@ -23,7 +23,7 @@ insert into auth.users (
   extensions.crypt('FeriaEffix2026*', extensions.gen_salt('bf')),
   now(), now(), now(),
   '{"provider":"email","providers":["email"]}',
-  '{"nombre":"Juan David Carmona"}',
+  '{"nombre":"Alexander Cast"}',
   '', '', '', '', '', '', '', ''
 );
 
@@ -41,7 +41,7 @@ insert into auth.identities (
 -- El trigger on_auth_user_created ya creó su fila en `usuarios`.
 -- Lo promovemos a directivo (acceso total vía es_admin_global()).
 update usuarios
-set rol_base = 'directivo', nombre = 'Juan David Carmona'
+set rol_base = 'directivo', nombre = 'Alexander Cast'
 where email = 'jacsolucionesgraficas@gmail.com';
 
 -- Tareas de ejemplo para ver el panel con datos reales.

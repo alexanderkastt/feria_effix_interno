@@ -39,12 +39,16 @@ export default async function PanelLayout({
           <GlobalSearch />
           <div className="flex items-center gap-4">
             <NotificacionesBell />
-            <span className="text-sm">
+            <Link
+              href="/panel/perfil"
+              className="text-sm hover:text-brand"
+              title="Mi perfil"
+            >
               {sesion.perfil.nombre}
               <span className="ml-2 rounded-full border border-brand/40 bg-brand-soft/30 px-2 py-0.5 text-xs text-brand">
                 {sesion.perfil.rol_base}
               </span>
-            </span>
+            </Link>
             <LogoutButton />
           </div>
         </header>
