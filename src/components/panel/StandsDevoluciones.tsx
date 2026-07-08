@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { StandAvatar } from "@/components/StandAvatar";
 import {
   FORMA_PAGO_LABEL,
@@ -90,6 +90,15 @@ export function StandsDevoluciones({
     for (const s of stands) mapa.set(s.id, s);
     return mapa;
   }, [stands]);
+
+  // Igual que en StandsAdmin: si llega data fresca (Realtime) mientras el
+  // modal de detalle está abierto, lo mantiene sincronizado.
+  useEffect(() => {
+    if (!detalle) return;
+    const actualizado = devoluciones.find((d) => d.id === detalle.id);
+    if (actualizado !== detalle) setDetalle(actualizado ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [devoluciones]);
 
   const visibles = devoluciones.filter(
     (d) => filtro === "todos" || d.estado_devolucion === filtro,

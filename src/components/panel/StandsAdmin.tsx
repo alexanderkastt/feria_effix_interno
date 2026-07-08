@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   actualizarStandComercial,
   cambiarEstadoStand,
@@ -14,6 +14,7 @@ import { StandAvatar } from "@/components/StandAvatar";
 import { StandDetalle } from "@/components/panel/StandDetalle";
 import { StandsDevoluciones } from "@/components/panel/StandsDevoluciones";
 import type { DevolucionView } from "@/components/panel/StandsDevoluciones";
+import { useRealtimeRefresh } from "@/lib/useRealtimeRefresh";
 import {
   Campo,
   PrecioStandEditor,
@@ -66,6 +67,10 @@ const ESTADO_LABEL: Record<StandView["estado"], string> = {
 
 type Tab = "stands" | "devoluciones";
 
+// Referencia estable (fuera del componente) para que useRealtimeRefresh no
+// se re-suscriba en cada render.
+const TABLAS_REALTIME = ["stands", "pagos_stand", "stands_devoluciones"];
+
 export function StandsAdmin({
   stands,
   pagos,
@@ -83,6 +88,8 @@ export function StandsAdmin({
   puedeEditar: boolean;
   puedeEditarComercial: boolean;
 }) {
+  useRealtimeRefresh(TABLAS_REALTIME);
+
   const [pending, startTransition] = useTransition();
   const [tab, setTab] = useState<Tab>("stands");
   const [seleccionado, setSeleccionado] = useState<StandView | null>(null);
@@ -110,6 +117,17 @@ export function StandsAdmin({
   const [filtroAsesor, setFiltroAsesor] = useState<string>("todos");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
+
+  // Si el detalle de un stand está abierto y llega data fresca (por
+  // Realtime), lo mantiene sincronizado en vez de seguir mostrando la foto
+  // vieja del momento en que se abrió. Si el stand desapareció (ej. se
+  // fusionó como secundario), cierra el modal en vez de mostrar algo obsoleto.
+  useEffect(() => {
+    if (!seleccionado) return;
+    const actualizado = stands.find((s) => s.id === seleccionado.id);
+    if (actualizado !== seleccionado) setSeleccionado(actualizado ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stands]);
 
   const hayFiltrosActivos =
     busqueda.trim() !== "" ||
