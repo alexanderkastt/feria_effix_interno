@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import {
   actualizarStandComercial,
   cambiarEstadoStand,
@@ -70,6 +77,12 @@ type Tab = "stands" | "devoluciones";
 // Referencia estable (fuera del componente) para que useRealtimeRefresh no
 // se re-suscriba en cada render.
 const TABLAS_REALTIME = ["stands", "pagos_stand", "stands_devoluciones"];
+
+// Referencia estable para stands sin fusionados: si esto fuera un `[]`
+// literal calculado en cada fila del map, cada StandRow vería un array
+// "nuevo" en cada render del padre (aunque esté vacío igual) y React.memo
+// nunca podría saltarse el re-render de esa fila.
+const SIN_HIJOS: StandView[] = [];
 
 export function StandsAdmin({
   stands,
@@ -240,14 +253,32 @@ export function StandsAdmin({
     return mapa;
   }, [stands]);
 
-  function alternarSeleccion(id: string) {
+  // Estable (no depende de `paraFusionar`, usa la forma funcional del
+  // setState) para que pasarlo como prop a StandRow no rompa React.memo.
+  const alternarSeleccion = useCallback((id: string) => {
     setParaFusionar((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }
+  }, []);
+
+  const cambiarEstadoDesdeFila = useCallback(
+    (stand: StandView, nuevo: StandView["estado"]) => {
+      setConfirmarCambioEstado({ stand, nuevo });
+    },
+    [],
+  );
+
+  const desfusionarDesdeFila = useCallback(
+    (id: string) => {
+      startTransition(async () => {
+        await desfusionarStand(id);
+      });
+    },
+    [startTransition],
+  );
 
   function confirmarFusion(principalId: string) {
     const secundarios = [...paraFusionar].filter((id) => id !== principalId);
@@ -375,114 +406,26 @@ export function StandsAdmin({
                 </tr>
               </thead>
               <tbody>
-                {standsFiltrados.map((s) => {
-                  const hijos = fusionadosPorPrincipal.get(s.id) ?? [];
-                  const principal = s.stand_principal_id
-                    ? standsPorId.get(s.stand_principal_id)
-                    : null;
-                  return (
-                    <tr key={s.id} className="border-b border-border/60">
-                      {puedeEditarComercial && (
-                        <td className="p-3">
-                          {!s.stand_principal_id && (
-                            <input
-                              type="checkbox"
-                              checked={paraFusionar.has(s.id)}
-                              onChange={() => alternarSeleccion(s.id)}
-                              className="h-4 w-4 accent-brand"
-                            />
-                          )}
-                        </td>
-                      )}
-                      <td className="p-3 font-medium">
-                        <div className="flex items-center gap-2">
-                          <StandAvatar
-                            logoUrl={s.logo_url}
-                            nombre={s.nombre}
-                            size={30}
-                          />
-                          <div>
-                            {s.codigo}
-                            {hijos.length > 0 && (
-                              <span className="ml-2 rounded-full border border-brand/50 bg-brand-soft/20 px-1.5 py-0.5 text-[10px] font-normal text-brand">
-                                +{hijos.length} fusionado
-                                {hijos.length === 1 ? "" : "s"}
-                              </span>
-                            )}
-                            {principal && (
-                              <p className="mt-0.5 text-[11px] font-normal text-muted">
-                                ↳ fusionado con {principal.codigo}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-3 text-muted">{s.nombre ?? "—"}</td>
-                      <td className="p-3 text-muted">
-                        {s.pabellon ? PABELLON_LABEL[s.pabellon] : "—"}
-                      </td>
-                      <td className="p-3 text-muted">{s.tamano ?? "—"}</td>
-                      <td className="p-3">{fmtCOP(s.valor_sin_iva ?? 0)}</td>
-                      <td className="p-3">
-                        {puedeEditar ? (
-                          <select
-                            value={s.estado}
-                            disabled={pending}
-                            onChange={(e) => {
-                              const nuevo = e.target
-                                .value as StandView["estado"];
-                              if (nuevo === s.estado) return;
-                              setConfirmarCambioEstado({ stand: s, nuevo });
-                            }}
-                            className="rounded-md border border-border bg-surface-2 px-2 py-1 text-xs outline-none focus:border-brand"
-                          >
-                            {ESTADOS.map((e) => (
-                              <option key={e} value={e}>
-                                {ESTADO_LABEL[e]}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          ESTADO_LABEL[s.estado]
-                        )}
-                      </td>
-                      <td className="p-3">
-                        {s.estado_venta ? (
-                          <span
-                            className={`rounded-full border px-2 py-0.5 text-xs ${ESTADO_VENTA_STYLE[s.estado_venta]}`}
-                          >
-                            {ESTADO_VENTA_LABEL[s.estado_venta]}
-                          </span>
-                        ) : (
-                          <span className="text-muted">—</span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setSeleccionado(s)}
-                            className="rounded-md border border-border px-2 py-1 text-xs text-brand hover:border-brand"
-                          >
-                            Ver detalle
-                          </button>
-                          {puedeEditarComercial && s.stand_principal_id && (
-                            <button
-                              disabled={pending}
-                              onClick={() =>
-                                startTransition(async () => {
-                                  await desfusionarStand(s.id);
-                                })
-                              }
-                              className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:border-warn hover:text-warn"
-                            >
-                              Desfusionar
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {standsFiltrados.map((s) => (
+                  <StandRow
+                    key={s.id}
+                    stand={s}
+                    hijos={fusionadosPorPrincipal.get(s.id) ?? SIN_HIJOS}
+                    principal={
+                      s.stand_principal_id
+                        ? (standsPorId.get(s.stand_principal_id) ?? null)
+                        : null
+                    }
+                    puedeEditar={puedeEditar}
+                    puedeEditarComercial={puedeEditarComercial}
+                    pending={pending}
+                    seleccionadoParaFusion={paraFusionar.has(s.id)}
+                    onToggleFusion={alternarSeleccion}
+                    onVerDetalle={setSeleccionado}
+                    onCambiarEstado={cambiarEstadoDesdeFila}
+                    onDesfusionar={desfusionarDesdeFila}
+                  />
+                ))}
               </tbody>
             </table>
           </div>
@@ -545,6 +488,134 @@ export function StandsAdmin({
     </div>
   );
 }
+
+// Fila memoizada de la tabla de stands: con 289 filas, tildar UN checkbox de
+// fusión (o cualquier otro cambio de estado local del padre) forzaba
+// re-renderizar las 289 filas enteras en cada tecla/click — perceptible como
+// lag/freeze en equipos más lentos. React.memo salta el re-render de una
+// fila si sus props no cambiaron por referencia/valor; para que eso
+// funcione, el padre le pasa `seleccionadoParaFusion` como booleano (no el
+// Set completo, que cambia de referencia con cada toggle de CUALQUIER fila)
+// y callbacks estables (useCallback / setState directo).
+const StandRow = memo(function StandRow({
+  stand: s,
+  hijos,
+  principal,
+  puedeEditar,
+  puedeEditarComercial,
+  pending,
+  seleccionadoParaFusion,
+  onToggleFusion,
+  onVerDetalle,
+  onCambiarEstado,
+  onDesfusionar,
+}: {
+  stand: StandView;
+  hijos: StandView[];
+  principal: StandView | null;
+  puedeEditar: boolean;
+  puedeEditarComercial: boolean;
+  pending: boolean;
+  seleccionadoParaFusion: boolean;
+  onToggleFusion: (id: string) => void;
+  onVerDetalle: (stand: StandView) => void;
+  onCambiarEstado: (stand: StandView, nuevo: StandView["estado"]) => void;
+  onDesfusionar: (id: string) => void;
+}) {
+  return (
+    <tr className="border-b border-border/60">
+      {puedeEditarComercial && (
+        <td className="p-3">
+          {!s.stand_principal_id && (
+            <input
+              type="checkbox"
+              checked={seleccionadoParaFusion}
+              onChange={() => onToggleFusion(s.id)}
+              className="h-4 w-4 accent-brand"
+            />
+          )}
+        </td>
+      )}
+      <td className="p-3 font-medium">
+        <div className="flex items-center gap-2">
+          <StandAvatar logoUrl={s.logo_url} nombre={s.nombre} size={30} />
+          <div>
+            {s.codigo}
+            {hijos.length > 0 && (
+              <span className="ml-2 rounded-full border border-brand/50 bg-brand-soft/20 px-1.5 py-0.5 text-[10px] font-normal text-brand">
+                +{hijos.length} fusionado
+                {hijos.length === 1 ? "" : "s"}
+              </span>
+            )}
+            {principal && (
+              <p className="mt-0.5 text-[11px] font-normal text-muted">
+                ↳ fusionado con {principal.codigo}
+              </p>
+            )}
+          </div>
+        </div>
+      </td>
+      <td className="p-3 text-muted">{s.nombre ?? "—"}</td>
+      <td className="p-3 text-muted">
+        {s.pabellon ? PABELLON_LABEL[s.pabellon] : "—"}
+      </td>
+      <td className="p-3 text-muted">{s.tamano ?? "—"}</td>
+      <td className="p-3">{fmtCOP(s.valor_sin_iva ?? 0)}</td>
+      <td className="p-3">
+        {puedeEditar ? (
+          <select
+            value={s.estado}
+            disabled={pending}
+            onChange={(e) => {
+              const nuevo = e.target.value as StandView["estado"];
+              if (nuevo === s.estado) return;
+              onCambiarEstado(s, nuevo);
+            }}
+            className="rounded-md border border-border bg-surface-2 px-2 py-1 text-xs outline-none focus:border-brand"
+          >
+            {ESTADOS.map((e) => (
+              <option key={e} value={e}>
+                {ESTADO_LABEL[e]}
+              </option>
+            ))}
+          </select>
+        ) : (
+          ESTADO_LABEL[s.estado]
+        )}
+      </td>
+      <td className="p-3">
+        {s.estado_venta ? (
+          <span
+            className={`rounded-full border px-2 py-0.5 text-xs ${ESTADO_VENTA_STYLE[s.estado_venta]}`}
+          >
+            {ESTADO_VENTA_LABEL[s.estado_venta]}
+          </span>
+        ) : (
+          <span className="text-muted">—</span>
+        )}
+      </td>
+      <td className="p-3">
+        <div className="flex gap-2">
+          <button
+            onClick={() => onVerDetalle(s)}
+            className="rounded-md border border-border px-2 py-1 text-xs text-brand hover:border-brand"
+          >
+            Ver detalle
+          </button>
+          {puedeEditarComercial && s.stand_principal_id && (
+            <button
+              disabled={pending}
+              onClick={() => onDesfusionar(s.id)}
+              className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:border-warn hover:text-warn"
+            >
+              Desfusionar
+            </button>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+});
 
 // Cualquier cambio en el select de Estado pasa por acá. 3 casos:
 //  - liberar (-> disponible con cliente cargado): aviso fuerte, hay que
