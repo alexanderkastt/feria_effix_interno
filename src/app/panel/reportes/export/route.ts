@@ -27,14 +27,16 @@ async function construirFilas(
     const [
       { data: stands },
       { data: patros },
-      { data: ingresos },
-      { data: gastos },
+      { data: movIngresos },
+      { data: movEgresos },
       { data: ponentes },
     ] = await Promise.all([
       supabase.from("stands").select("estado"),
       supabase.from("patrocinios").select("monto, estado_pago"),
-      supabase.from("ingresos").select("monto, estado"),
-      supabase.from("gastos").select("monto, estado"),
+      // RLS ya filtra por nivel_sensibilidad — este reporte está gateado por
+      // sesion.esAdmin, así que solo llega lo que es_admin_global() puede ver.
+      supabase.from("movimientos_ingresos").select("total_neto"),
+      supabase.from("movimientos_egresos").select("total_neto"),
       supabase.from("postulaciones_ponentes").select("estado"),
     ]);
     const total = stands?.length ?? 0;
@@ -45,12 +47,14 @@ async function construirFilas(
     const patPago = (patros ?? [])
       .filter((p) => p.estado_pago === "pagado")
       .reduce((s, p) => s + Number(p.monto), 0);
-    const ing = (ingresos ?? [])
-      .filter((i) => i.estado === "confirmado" || i.estado === "cobrado")
-      .reduce((s, i) => s + Number(i.monto), 0);
-    const gas = (gastos ?? [])
-      .filter((g) => g.estado === "pagado")
-      .reduce((s, g) => s + Number(g.monto), 0);
+    const ing = (movIngresos ?? []).reduce(
+      (s, i) => s + Number(i.total_neto ?? 0),
+      0,
+    );
+    const gas = (movEgresos ?? []).reduce(
+      (s, g) => s + Number(g.total_neto ?? 0),
+      0,
+    );
     return {
       titulo: "Estado general de la feria",
       filas: [
@@ -63,8 +67,8 @@ async function construirFilas(
             (ponentes ?? []).filter((p) => p.estado === "aceptado").length,
           ),
         ],
-        ["Ingresos (confirmado+cobrado)", fmtCOP(ing)],
-        ["Gastos pagados", fmtCOP(gas)],
+        ["Ingresos ejecutados", fmtCOP(ing)],
+        ["Egresos ejecutados", fmtCOP(gas)],
         ["Balance", fmtCOP(ing - gas)],
       ],
     };

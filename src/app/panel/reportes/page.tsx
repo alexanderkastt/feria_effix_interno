@@ -80,8 +80,8 @@ export default async function ReportesPage() {
       { data: stands },
       { data: patros },
       { data: ponentes },
-      { data: ingresos },
-      { data: gastos },
+      { data: movIngresos },
+      { data: movEgresos },
     ] = await Promise.all([
       supabase
         .from("contexto_evento")
@@ -91,8 +91,10 @@ export default async function ReportesPage() {
       supabase.from("stands").select("estado"),
       supabase.from("patrocinios").select("monto, estado_pago"),
       supabase.from("postulaciones_ponentes").select("estado"),
-      supabase.from("ingresos").select("monto, estado"),
-      supabase.from("gastos").select("monto, estado"),
+      // RLS ya filtra por nivel_sensibilidad — acá solo llega lo que
+      // es_admin_global() (este bloque está gateado por sesion.esAdmin) puede ver.
+      supabase.from("movimientos_ingresos").select("total_neto"),
+      supabase.from("movimientos_egresos").select("total_neto"),
     ]);
 
     const standsTotal = stands?.length ?? 0;
@@ -106,12 +108,14 @@ export default async function ReportesPage() {
     const patrocinioPagado = (patros ?? [])
       .filter((p) => p.estado_pago === "pagado")
       .reduce((s, p) => s + Number(p.monto), 0);
-    const ingresosOk = (ingresos ?? [])
-      .filter((i) => i.estado === "confirmado" || i.estado === "cobrado")
-      .reduce((s, i) => s + Number(i.monto), 0);
-    const gastosPagados = (gastos ?? [])
-      .filter((g) => g.estado === "pagado")
-      .reduce((s, g) => s + Number(g.monto), 0);
+    const ingresosOk = (movIngresos ?? []).reduce(
+      (s, i) => s + Number(i.total_neto ?? 0),
+      0,
+    );
+    const gastosPagados = (movEgresos ?? []).reduce(
+      (s, g) => s + Number(g.total_neto ?? 0),
+      0,
+    );
 
     general = {
       diasRestantes: ctx?.fecha_inicio
