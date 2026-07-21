@@ -5,7 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSesion } from "@/lib/auth";
 
-type RolBase = "directivo" | "administrativo" | "gestor_area" | "colaborador";
+type RolBase =
+  | "directivo"
+  | "administrativo"
+  | "gestor_area"
+  | "colaborador"
+  | "finanzas_operativo";
 type Nivel = "lectura" | "edicion" | "admin";
 
 export interface AccionResult {

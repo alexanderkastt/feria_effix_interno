@@ -30,6 +30,12 @@ export interface AreaMeta {
    * terminado y probado.
    */
   listo: boolean;
+  /**
+   * Puramente cosmético (sidebar): marca el módulo que se está construyendo
+   * activamente ahora mismo, para distinguirlo de los que aún no se han
+   * tocado. No afecta permisos — eso lo sigue controlando `listo`.
+   */
+  enProgreso?: boolean;
 }
 
 export const AREAS: AreaMeta[] = [
@@ -45,7 +51,7 @@ export const AREAS: AreaMeta[] = [
   { slug: "diseno", label: "Diseño", listo: false },
   { slug: "video", label: "Video", listo: false },
   { slug: "produccion", label: "Producción", listo: false },
-  { slug: "finanzas", label: "Finanzas", listo: false },
+  { slug: "finanzas", label: "Finanzas", listo: false, enProgreso: true },
   { slug: "estrategia", label: "Estrategia", listo: false },
   { slug: "marketing", label: "Marketing", listo: false },
   { slug: "alianzas", label: "Alianzas estratégicas", listo: false },

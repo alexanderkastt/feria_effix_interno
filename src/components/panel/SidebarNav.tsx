@@ -21,21 +21,47 @@ export function SidebarNav({
   // listo/root que el resto de los módulos, no el esAdmin genérico.
   const tieneMarketing = esRoot || areas.some((a) => a.slug === "marketing");
 
-  const item = (href: string, label: string) => {
+  const item = (href: string, label: string, indicador?: React.ReactNode) => {
     const activo = pathname === href;
     return (
       <Link
         key={href}
         href={href}
-        className={`block rounded-md px-3 py-2 text-sm transition-colors ${
+        className={`flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm transition-colors ${
           activo
             ? "bg-brand-soft/50 font-medium text-brand"
             : "text-muted hover:bg-surface-2 hover:text-foreground"
         }`}
       >
-        {label}
+        <span>{label}</span>
+        {indicador}
       </Link>
     );
+  };
+
+  // Indicador cosmético de estado del módulo: check verde si ya está listo
+  // para todo el equipo, punto ámbar si se está construyendo activamente
+  // ahora mismo. Los módulos sin ninguno de los dos flags no muestran nada.
+  const indicadorEstado = (a: AreaMeta) => {
+    if (a.listo) {
+      return (
+        <span
+          title="Módulo listo"
+          className="text-xs font-semibold text-green-600 dark:text-green-500"
+        >
+          ✓
+        </span>
+      );
+    }
+    if (a.enProgreso) {
+      return (
+        <span
+          title="En construcción"
+          className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500"
+        />
+      );
+    }
+    return null;
   };
 
   const titulo = (t: string) => (
@@ -49,7 +75,7 @@ export function SidebarNav({
       {mostrarDashboard && item("/panel", "Dashboard")}
 
       {titulo("Áreas")}
-      {areas.map((a) => item(`/panel/${a.slug}`, a.label))}
+      {areas.map((a) => item(`/panel/${a.slug}`, a.label, indicadorEstado(a)))}
 
       {titulo("Medición")}
       {item("/panel/medicion", "KPIs / Medición")}

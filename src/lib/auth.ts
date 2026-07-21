@@ -5,7 +5,8 @@ export type RolBase =
   | "directivo"
   | "administrativo"
   | "gestor_area"
-  | "colaborador";
+  | "colaborador"
+  | "finanzas_operativo";
 
 export interface Perfil {
   id: string;
@@ -30,6 +31,16 @@ export interface Sesion {
    * solo ven los módulos ya marcados `listo: true`.
    */
   esRoot: boolean;
+  /**
+   * rol_base === 'finanzas_operativo'. Rol de sensibilidad media dentro del
+   * módulo de Finanzas: ve nivel "detalle" (líneas de ingreso/egreso con
+   * proveedor/cliente, monto, factura) pero NO nivel "personal" (NITs,
+   * nómina individual, datos bancarios) salvo excepción explícita otorgada
+   * por directivo/administrativo (ver `finanzas_excepciones_acceso` y
+   * `puede_ver_nivel_financiero()` en la base de datos). No confundir con
+   * `esAdmin`: un finanzas_operativo NO es directivo/administrativo.
+   */
+  esFinanzasOperativo: boolean;
   areas: AreaAccesible[];
 }
 
@@ -55,6 +66,7 @@ export async function getSesion(): Promise<Sesion | null> {
   const esRoot = perfil.email === EMAIL_ROOT;
   const esAdmin =
     perfil.rol_base === "directivo" || perfil.rol_base === "administrativo";
+  const esFinanzasOperativo = perfil.rol_base === "finanzas_operativo";
 
   let areas: AreaAccesible[];
   if (esRoot) {
@@ -81,5 +93,5 @@ export async function getSesion(): Promise<Sesion | null> {
     }));
   }
 
-  return { perfil, esAdmin, esRoot, areas };
+  return { perfil, esAdmin, esRoot, esFinanzasOperativo, areas };
 }

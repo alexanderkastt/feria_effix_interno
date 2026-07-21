@@ -8,7 +8,12 @@ import {
   quitarArea,
 } from "@/app/panel/admin/usuarios/actions";
 
-type RolBase = "directivo" | "administrativo" | "gestor_area" | "colaborador";
+type RolBase =
+  | "directivo"
+  | "administrativo"
+  | "gestor_area"
+  | "colaborador"
+  | "finanzas_operativo";
 type Nivel = "lectura" | "edicion" | "admin";
 
 export interface AreaOption {
@@ -31,6 +36,7 @@ const ROLES: RolBase[] = [
   "administrativo",
   "gestor_area",
   "colaborador",
+  "finanzas_operativo",
 ];
 const NIVELES: Nivel[] = ["lectura", "edicion", "admin"];
 

@@ -7,7 +7,12 @@ export interface MiPerfilData {
   id: string;
   email: string;
   nombre: string;
-  rol_base: "directivo" | "administrativo" | "gestor_area" | "colaborador";
+  rol_base:
+    | "directivo"
+    | "administrativo"
+    | "gestor_area"
+    | "colaborador"
+    | "finanzas_operativo";
   telefono: string | null;
   cargo: string | null;
   avatar_url: string | null;
@@ -19,6 +24,7 @@ const ROL_LABEL: Record<MiPerfilData["rol_base"], string> = {
   administrativo: "Administrativo",
   gestor_area: "Gestor de área",
   colaborador: "Colaborador",
+  finanzas_operativo: "Finanzas (operativo)",
 };
 
 export function MiPerfil({ perfil }: { perfil: MiPerfilData }) {
