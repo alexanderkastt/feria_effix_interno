@@ -35,6 +35,7 @@ import {
   FRECUENCIA_LABEL,
   PABELLON_LABEL,
   TIPO_STAND_LABEL,
+  calcularAreaM2,
   fmtCOP,
   formatearTamano,
   type AsesorOption,
@@ -73,6 +74,48 @@ const ESTADO_LABEL: Record<StandView["estado"], string> = {
 };
 
 type Tab = "stands" | "devoluciones";
+
+type ColumnaOrdenable =
+  | "codigo"
+  | "nombre"
+  | "pabellon"
+  | "tamano"
+  | "precio"
+  | "estado"
+  | "estado_venta";
+
+// Compara dos stands por la columna elegida. `codigo` y `tamano` usan orden
+// numérico (localeCompare con `numeric: true` / área en m²) para que "GL2"
+// quede antes que "GL10" y "3x2" antes que "6x4" — un sort alfabético plano
+// los deja en cualquier orden porque son texto, no números.
+function compararStands(a: StandView, b: StandView, columna: ColumnaOrdenable) {
+  switch (columna) {
+    case "codigo":
+      return a.codigo.localeCompare(b.codigo, "es", { numeric: true });
+    case "nombre":
+      return (a.nombre ?? "").localeCompare(b.nombre ?? "", "es");
+    case "pabellon":
+      return (a.pabellon ? PABELLON_LABEL[a.pabellon] : "").localeCompare(
+        b.pabellon ? PABELLON_LABEL[b.pabellon] : "",
+        "es",
+      );
+    case "tamano":
+      return (
+        (calcularAreaM2(a.tamano) ?? -1) - (calcularAreaM2(b.tamano) ?? -1)
+      );
+    case "precio":
+      return (a.valor_sin_iva ?? 0) - (b.valor_sin_iva ?? 0);
+    case "estado":
+      return ESTADO_LABEL[a.estado].localeCompare(ESTADO_LABEL[b.estado], "es");
+    case "estado_venta":
+      return (
+        a.estado_venta ? ESTADO_VENTA_LABEL[a.estado_venta] : ""
+      ).localeCompare(
+        b.estado_venta ? ESTADO_VENTA_LABEL[b.estado_venta] : "",
+        "es",
+      );
+  }
+}
 
 // Referencia estable (fuera del componente) para que useRealtimeRefresh no
 // se re-suscriba en cada render.
@@ -131,6 +174,17 @@ export function StandsAdmin({
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
 
+  const [ordenPor, setOrdenPor] = useState<ColumnaOrdenable>("codigo");
+  const [ordenAsc, setOrdenAsc] = useState(true);
+
+  function alternarOrden(columna: ColumnaOrdenable) {
+    if (ordenPor === columna) setOrdenAsc((asc) => !asc);
+    else {
+      setOrdenPor(columna);
+      setOrdenAsc(true);
+    }
+  }
+
   // Si el detalle de un stand está abierto y llega data fresca (por
   // Realtime), lo mantiene sincronizado en vez de seguir mostrando la foto
   // vieja del momento en que se abrió. Si el stand desapareció (ej. se
@@ -165,7 +219,7 @@ export function StandsAdmin({
 
   const standsFiltrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    return stands.filter((s) => {
+    const filtrados = stands.filter((s) => {
       if (filtroPabellon !== "todos" && s.pabellon !== filtroPabellon)
         return false;
       if (filtroEstado !== "todos" && s.estado !== filtroEstado) return false;
@@ -199,6 +253,8 @@ export function StandsAdmin({
       }
       return true;
     });
+    const dir = ordenAsc ? 1 : -1;
+    return filtrados.sort((a, b) => dir * compararStands(a, b, ordenPor));
   }, [
     stands,
     busqueda,
@@ -209,6 +265,8 @@ export function StandsAdmin({
     filtroAsesor,
     fechaDesde,
     fechaHasta,
+    ordenPor,
+    ordenAsc,
   ]);
 
   const conteo = ESTADOS.map((e) => ({
@@ -395,13 +453,55 @@ export function StandsAdmin({
               <thead>
                 <tr className="border-b border-border text-left text-muted">
                   {puedeEditarComercial && <th className="w-8 p-3"></th>}
-                  <th className="p-3 font-medium">Código</th>
-                  <th className="p-3 font-medium">Nombre comercial</th>
-                  <th className="p-3 font-medium">Pabellón</th>
-                  <th className="p-3 font-medium">Tamaño</th>
-                  <th className="p-3 font-medium">Precio (sin IVA)</th>
-                  <th className="p-3 font-medium">Estado</th>
-                  <th className="p-3 font-medium">Estado venta</th>
+                  <ThOrdenable
+                    label="Código"
+                    columna="codigo"
+                    ordenActual={ordenPor}
+                    ordenAsc={ordenAsc}
+                    onClick={alternarOrden}
+                  />
+                  <ThOrdenable
+                    label="Nombre comercial"
+                    columna="nombre"
+                    ordenActual={ordenPor}
+                    ordenAsc={ordenAsc}
+                    onClick={alternarOrden}
+                  />
+                  <ThOrdenable
+                    label="Pabellón"
+                    columna="pabellon"
+                    ordenActual={ordenPor}
+                    ordenAsc={ordenAsc}
+                    onClick={alternarOrden}
+                  />
+                  <ThOrdenable
+                    label="Tamaño"
+                    columna="tamano"
+                    ordenActual={ordenPor}
+                    ordenAsc={ordenAsc}
+                    onClick={alternarOrden}
+                  />
+                  <ThOrdenable
+                    label="Precio (sin IVA)"
+                    columna="precio"
+                    ordenActual={ordenPor}
+                    ordenAsc={ordenAsc}
+                    onClick={alternarOrden}
+                  />
+                  <ThOrdenable
+                    label="Estado"
+                    columna="estado"
+                    ordenActual={ordenPor}
+                    ordenAsc={ordenAsc}
+                    onClick={alternarOrden}
+                  />
+                  <ThOrdenable
+                    label="Estado venta"
+                    columna="estado_venta"
+                    ordenActual={ordenPor}
+                    ordenAsc={ordenAsc}
+                    onClick={alternarOrden}
+                  />
                   <th className="p-3 font-medium">Acciones</th>
                 </tr>
               </thead>
@@ -1162,6 +1262,35 @@ function FiltrosStands({
         Mostrando {visibles} de {total} stands
       </p>
     </div>
+  );
+}
+
+function ThOrdenable({
+  label,
+  columna,
+  ordenActual,
+  ordenAsc,
+  onClick,
+}: {
+  label: string;
+  columna: ColumnaOrdenable;
+  ordenActual: ColumnaOrdenable;
+  ordenAsc: boolean;
+  onClick: (columna: ColumnaOrdenable) => void;
+}) {
+  const activo = ordenActual === columna;
+  return (
+    <th className="p-3 font-medium">
+      <button
+        onClick={() => onClick(columna)}
+        className={`flex items-center gap-1 hover:text-foreground ${activo ? "text-foreground" : ""}`}
+      >
+        {label}
+        <span className="text-[10px]">
+          {activo ? (ordenAsc ? "▲" : "▼") : ""}
+        </span>
+      </button>
+    </th>
   );
 }
 
