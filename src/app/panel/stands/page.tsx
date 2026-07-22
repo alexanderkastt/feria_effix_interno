@@ -27,10 +27,8 @@ export default async function PanelStandsPage() {
   const supabase = await createClient();
   const [standsRes, pagosRes, devolucionesRes, asesoresRes, historialRes] =
     await Promise.all([
-      supabase
-        .from("stands")
-        .select(
-          `id, codigo, nombre, tamano, tarifa_zona_comidas, precio, estado,
+      supabase.from("stands").select(
+        `id, codigo, nombre, tamano, tarifa_zona_comidas, precio, estado,
            cliente_nombre, cliente_email, cliente_telefono,
            pabellon, tipo_stand, categoria_cliente, estado_venta, obsequio_de,
            valor_sin_iva, valor_con_iva, precio_venta,
@@ -47,8 +45,7 @@ export default async function PanelStandsPage() {
            directorio_email, directorio_sitio_web, directorio_descripcion,
            directorio_instagram, directorio_facebook, directorio_tiktok,
            directorio_linkedin`,
-        )
-        .order("codigo"),
+      ),
       supabase
         .from("pagos_stand")
         .select("id, stand_id, monto, fecha, medio_pago, tipo_pago")
@@ -78,12 +75,19 @@ export default async function PanelStandsPage() {
         .limit(3000),
     ]);
 
-  const stands: StandView[] = (standsRes.data ?? []).map((s) => ({
-    ...s,
-    asesor_nombre:
-      (s.asesores_comerciales as unknown as { nombre_completo: string } | null)
-        ?.nombre_completo ?? null,
-  })) as unknown as StandView[];
+  const stands: StandView[] = (standsRes.data ?? [])
+    .map((s) => ({
+      ...s,
+      asesor_nombre:
+        (
+          s.asesores_comerciales as unknown as {
+            nombre_completo: string;
+          } | null
+        )?.nombre_completo ?? null,
+    }))
+    .sort((a, b) =>
+      a.codigo.localeCompare(b.codigo, "es", { numeric: true }),
+    ) as unknown as StandView[];
 
   const historial: HistorialEntradaView[] = (historialRes.data ?? []).map(
     (h) => ({
