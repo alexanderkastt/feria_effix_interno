@@ -51,7 +51,7 @@ export const AREAS: AreaMeta[] = [
   { slug: "diseno", label: "Diseño", listo: false },
   { slug: "video", label: "Video", listo: false },
   { slug: "produccion", label: "Producción", listo: false },
-  { slug: "finanzas", label: "Finanzas", listo: false, enProgreso: true },
+  { slug: "finanzas", label: "Finanzas", listo: true, enProgreso: true },
   { slug: "estrategia", label: "Estrategia", listo: false },
   { slug: "marketing", label: "Marketing", listo: false },
   { slug: "alianzas", label: "Alianzas estratégicas", listo: false },
