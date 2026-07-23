@@ -4,9 +4,12 @@ import { useState, useTransition, type TransitionStartFunction } from "react";
 import {
   actualizarChecklistStand,
   actualizarStandComercial,
+  editarPago,
+  eliminarPago,
   registrarPago,
   type ChecklistCampoStand,
   type DatosComercialesStandInput,
+  type NuevoPagoInput,
 } from "@/app/panel/stands/actions";
 import { StandAvatar } from "@/components/StandAvatar";
 import {
@@ -399,6 +402,9 @@ function PlanDePagos({
   puedeEditar: boolean;
 }) {
   const [abrir, setAbrir] = useState(false);
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
   return (
     <div className="rounded-lg border border-border bg-surface-2 p-4">
@@ -440,28 +446,197 @@ function PlanDePagos({
               <th className="pb-2 font-medium">Tipo</th>
               <th className="pb-2 font-medium">Medio de pago</th>
               <th className="pb-2 text-right font-medium">Monto</th>
+              {puedeEditar && <th className="pb-2 text-right font-medium"></th>}
             </tr>
           </thead>
           <tbody>
             {pagos
               .slice()
               .sort((a, b) => (a.fecha < b.fecha ? 1 : -1))
-              .map((p) => (
-                <tr key={p.id} className="border-b border-border/40">
-                  <td className="py-2">{p.fecha}</td>
-                  <td className="py-2 text-muted">
-                    {p.tipo_pago ? TIPO_PAGO_LABEL[p.tipo_pago] : "—"}
-                  </td>
-                  <td className="py-2 text-muted">
-                    {p.medio_pago ? MEDIO_PAGO_LABEL[p.medio_pago] : "—"}
-                  </td>
-                  <td className="py-2 text-right">{fmtCOP(p.monto)}</td>
-                </tr>
-              ))}
+              .map((p) =>
+                editandoId === p.id ? (
+                  <EditarPagoForm
+                    key={p.id}
+                    pago={p}
+                    pending={pending}
+                    onCancelar={() => setEditandoId(null)}
+                    onGuardar={(input) => {
+                      startTransition(async () => {
+                        const r = await editarPago(p.id, input);
+                        if (r.ok) setEditandoId(null);
+                      });
+                    }}
+                  />
+                ) : (
+                  <tr key={p.id} className="border-b border-border/40">
+                    <td className="py-2">{p.fecha}</td>
+                    <td className="py-2 text-muted">
+                      {p.tipo_pago ? TIPO_PAGO_LABEL[p.tipo_pago] : "—"}
+                    </td>
+                    <td className="py-2 text-muted">
+                      {p.medio_pago ? MEDIO_PAGO_LABEL[p.medio_pago] : "—"}
+                    </td>
+                    <td className="py-2 text-right">{fmtCOP(p.monto)}</td>
+                    {puedeEditar && (
+                      <td className="py-2 text-right">
+                        {confirmandoId === p.id ? (
+                          <span className="flex justify-end gap-1.5">
+                            <span className="text-xs text-warn">
+                              ¿Eliminar?
+                            </span>
+                            <button
+                              disabled={pending}
+                              onClick={() =>
+                                startTransition(async () => {
+                                  const r = await eliminarPago(p.id);
+                                  if (r.ok) setConfirmandoId(null);
+                                })
+                              }
+                              className="text-xs font-medium text-danger hover:underline"
+                            >
+                              Sí
+                            </button>
+                            <button
+                              disabled={pending}
+                              onClick={() => setConfirmandoId(null)}
+                              className="text-xs text-muted hover:underline"
+                            >
+                              No
+                            </button>
+                          </span>
+                        ) : (
+                          <span className="flex justify-end gap-2">
+                            <button
+                              disabled={pending}
+                              onClick={() => setEditandoId(p.id)}
+                              className="text-xs text-brand hover:underline"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              disabled={pending}
+                              onClick={() => setConfirmandoId(p.id)}
+                              className="text-xs text-muted hover:text-danger hover:underline"
+                            >
+                              Eliminar
+                            </button>
+                          </span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ),
+              )}
           </tbody>
         </table>
       )}
     </div>
+  );
+}
+
+function EditarPagoForm({
+  pago,
+  pending,
+  onCancelar,
+  onGuardar,
+}: {
+  pago: PagoStandView;
+  pending: boolean;
+  onCancelar: () => void;
+  onGuardar: (input: NuevoPagoInput) => void;
+}) {
+  const [monto, setMonto] = useState(String(pago.monto));
+  const [fecha, setFecha] = useState(pago.fecha);
+  const [medioPago, setMedioPago] = useState<MedioPago>(
+    pago.medio_pago ?? MEDIOS_PAGO[0],
+  );
+  const [tipoPago, setTipoPago] = useState<TipoPagoStand>(
+    pago.tipo_pago ?? TIPOS_PAGO[0],
+  );
+  const [error, setError] = useState<string | null>(null);
+
+  function guardar() {
+    const montoNum = Number(monto);
+    if (!montoNum || montoNum <= 0) {
+      setError("Ingresá un monto válido.");
+      return;
+    }
+    setError(null);
+    onGuardar({
+      monto: montoNum,
+      fecha,
+      medio_pago: medioPago,
+      tipo_pago: tipoPago,
+    });
+  }
+
+  return (
+    <tr className="border-b border-border/40 bg-surface">
+      <td className="py-2 pr-2">
+        <input
+          type="date"
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+          className="w-full rounded-md border border-border bg-surface-2 px-2 py-1 text-xs outline-none focus:border-brand"
+        />
+      </td>
+      <td className="py-2 pr-2">
+        <select
+          value={tipoPago}
+          onChange={(e) => setTipoPago(e.target.value as TipoPagoStand)}
+          className="w-full rounded-md border border-border bg-surface-2 px-2 py-1 text-xs outline-none focus:border-brand"
+        >
+          {TIPOS_PAGO.map((t) => (
+            <option key={t} value={t}>
+              {TIPO_PAGO_LABEL[t]}
+            </option>
+          ))}
+        </select>
+      </td>
+      <td className="py-2 pr-2">
+        <select
+          value={medioPago}
+          onChange={(e) => setMedioPago(e.target.value as MedioPago)}
+          className="w-full rounded-md border border-border bg-surface-2 px-2 py-1 text-xs outline-none focus:border-brand"
+        >
+          {MEDIOS_PAGO.map((m) => (
+            <option key={m} value={m}>
+              {MEDIO_PAGO_LABEL[m]}
+            </option>
+          ))}
+        </select>
+      </td>
+      <td className="py-2 pr-2">
+        <input
+          type="number"
+          min="0"
+          value={monto}
+          onChange={(e) => setMonto(e.target.value)}
+          className="w-full rounded-md border border-border bg-surface-2 px-2 py-1 text-right text-xs outline-none focus:border-brand"
+        />
+        {error && (
+          <p className="mt-1 text-right text-[10px] text-danger">{error}</p>
+        )}
+      </td>
+      <td className="py-2 text-right">
+        <span className="flex justify-end gap-2">
+          <button
+            disabled={pending}
+            onClick={guardar}
+            className="text-xs font-medium text-brand hover:underline"
+          >
+            Guardar
+          </button>
+          <button
+            disabled={pending}
+            onClick={onCancelar}
+            className="text-xs text-muted hover:underline"
+          >
+            Cancelar
+          </button>
+        </span>
+      </td>
+    </tr>
   );
 }
 

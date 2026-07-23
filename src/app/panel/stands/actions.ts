@@ -107,6 +107,45 @@ export async function registrarPago(
   return { ok: true };
 }
 
+// Corrige un abono ya registrado (fecha, monto o medio/tipo de pago
+// equivocados). El trigger de la base recalcula valor_restante solo.
+export async function editarPago(
+  pagoId: string,
+  input: NuevoPagoInput,
+): Promise<AccionResult> {
+  if (!(await puedeGestionarComercialStands())) return SIN_PERMISO_COMERCIAL;
+  if (!Number.isFinite(input.monto) || input.monto <= 0) {
+    return { ok: false, mensaje: "El monto debe ser mayor a cero." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("pagos_stand")
+    .update({
+      monto: input.monto,
+      fecha: input.fecha,
+      medio_pago: input.medio_pago,
+      tipo_pago: input.tipo_pago,
+    })
+    .eq("id", pagoId);
+  if (error) return { ok: false, mensaje: error.message };
+  revalidatePath("/panel/stands");
+  return { ok: true };
+}
+
+// Elimina un abono cargado por error. El trigger de la base recalcula
+// valor_restante solo (ver recalcular_valor_restante_stand).
+export async function eliminarPago(pagoId: string): Promise<AccionResult> {
+  if (!(await puedeGestionarComercialStands())) return SIN_PERMISO_COMERCIAL;
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("pagos_stand")
+    .delete()
+    .eq("id", pagoId);
+  if (error) return { ok: false, mensaje: error.message };
+  revalidatePath("/panel/stands");
+  return { ok: true };
+}
+
 export type ChecklistCampoStand =
   | "contrato_entregado"
   | "manual_entregado"
